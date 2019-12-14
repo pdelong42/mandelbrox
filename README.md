@@ -1,5 +1,15 @@
 This is a Mandelbrot Set sandbox (hence the name: mandelbrox).
 
+Sample usage:
+
+   ./mandelbrox > foo.pgm
+
+And then...
+
+   geeqie foo.pgm
+
+(...or equivalent image viewer that understands PNM formats.)
+
 I'm building-up to doing this using some sort of parallel compute.
 But before that, I need to review the basics.
 
