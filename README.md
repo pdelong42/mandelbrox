@@ -22,3 +22,7 @@ into the GMP library (GNU Multi-Precision).
 
 I'd also like to try to use pthreads.  Other goals in the parallel
 compute options include: MPI, OSG, and GPGPU.
+
+Let's see, other things for the wishlist: command-line parsing of
+input parameters, color output for the images, run parameters from an
+input file (maybe?).
