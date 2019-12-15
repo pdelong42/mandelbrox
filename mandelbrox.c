@@ -2,11 +2,10 @@
 
 int main( int argc, char *argv[] ) {
 
-  //int width = 100;
-  //int height = 50;
-  int width  = 4096;
-  int height = 4096;
+  int width  = 1024;
+  int height = 1024;
   int max_iter = 1000;
+  double bailout = 4.0;
   double x_min = -2.0, x_max = +2.0;
   double y_min = -2.0, y_max = +2.0;
   double x_ratio = ( x_max - x_min ) / width;
@@ -34,7 +33,7 @@ int main( int argc, char *argv[] ) {
         double xx = x * x;
         double yy = y * y;
 
-        if( xx + yy > 4 ) break;
+        if( xx + yy > bailout ) break;
 
         double x_new = a + xx - yy;
         double y_new = b + 2 * x * y;
