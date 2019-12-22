@@ -22,18 +22,11 @@ int main( int argc, char *argv[] ) {
 
   while( 1 ) {
 
-    int option_index = 0;
-
-    int c = getopt_long( argc, argv, "f:m:b:w:h:", long_options, &option_index );
+    int c = getopt_long( argc, argv, "f:m:b:w:h:", long_options, NULL );
 
     if( c < 0 ) break;
 
     switch( c ) {
-    case 0:
-      printf( "option %s", long_options[option_index].name );
-      if( optarg ) printf(" with arg %s", optarg);
-      printf( "\n" );
-      break;
 
     case 'f':
       sscanf( optarg, "%9s", format );
