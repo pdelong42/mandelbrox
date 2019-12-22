@@ -3,7 +3,7 @@
 
 int main( int argc, char *argv[] ) {
 
-  char *format = "P1";
+  char format[10] = "P1";
   int width  = 1024;
   int height = 1024;
   int max_iter = 1000;
@@ -36,23 +36,23 @@ int main( int argc, char *argv[] ) {
       break;
 
     case 'f':
-      sscanf( optarg, "%s", format );
+      sscanf( optarg, "%9s", format );
       break;
 
     case 'm':
-      sscanf( optarg, "%d", &max_iter );
+      sscanf( optarg, "%9d", &max_iter );
       break;
 
     case 'w':
-      sscanf( optarg, "%d", &width );
+      sscanf( optarg, "%9d", &width );
       break;
 
     case 'h':
-      sscanf( optarg, "%d", &height );
+      sscanf( optarg, "%9d", &height );
       break;
 
     case 'b':
-      sscanf( optarg, "%lf", &bailout );
+      sscanf( optarg, "%9lf", &bailout );
       break;
 
     case '?':
