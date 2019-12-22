@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <getopt.h>
 
 int main( int argc, char *argv[] ) {
@@ -60,6 +61,11 @@ int main( int argc, char *argv[] ) {
     fprintf( stderr, "non-option ARGV-elements: " );
     while( optind < argc ) fprintf( stderr, "%s ", argv[optind++] );
     fprintf( stderr, "\n");
+  }
+
+  if( width <= 0 || height <= 0 ) {
+    fprintf( stderr, "ERROR: canvas must not be zero width or height - aborting\n" );
+    exit( EXIT_FAILURE );
   }
 
   printf( "P1\n%d %d\n", width, height );
