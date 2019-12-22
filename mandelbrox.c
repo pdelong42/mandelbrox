@@ -9,33 +9,45 @@ int main( int argc, char *argv[] ) {
   double bailout = 4.0;
   double x_min = -2.0, x_max = +2.0;
   double y_min = -2.0, y_max = +2.0;
-  double x_ratio = ( x_max - x_min ) / width;
-  double y_ratio = ( y_max - y_min ) / height;
 
   static struct option long_options[] = {
-    {"format", required_argument, 0, 'f' },
-    {"verbose", no_argument,      0, 'v' },
-    {"width",   no_argument,      0, 'w' },
-    {"height",  no_argument,      0, 'h' },
-    {0,         0,                0,   0 }
+    {  "format", required_argument, 0, 'f' },
+    {   "width", required_argument, 0, 'w' },
+    {  "height", required_argument, 0, 'h' },
+    { "bailout", required_argument, 0, 'b' },
+    { "maxiter", required_argument, 0, 'm' },
+    {         0,                 0, 0,  0  }
   };
-
 
   while( 1 ) {
 
-    int this_option_optind = optind ? optind : 1;
-    int digit_optind = 0;
     int option_index = 0;
 
-    int c = getopt_long( argc, argv, "abc:d:", long_options, &option_index );
+    int c = getopt_long( argc, argv, "m:b:w:h:", long_options, &option_index );
 
     if( c < 0 ) break;
 
-    switch (c) {
+    switch( c ) {
     case 0:
       printf( "option %s", long_options[option_index].name );
       if( optarg ) printf(" with arg %s", optarg);
       printf( "\n" );
+      break;
+
+    case 'm':
+      sscanf( optarg, "%d", &max_iter );
+      break;
+
+    case 'w':
+      sscanf( optarg, "%d", &width );
+      break;
+
+    case 'h':
+      sscanf( optarg, "%d", &height );
+      break;
+
+    case 'b':
+      sscanf( optarg, "%lf", &bailout );
       break;
 
     case '?':
@@ -58,6 +70,9 @@ int main( int argc, char *argv[] ) {
   printf( "# y_min = %f\n", y_min );
   printf( "# y_max = %f\n", y_max );
   printf( "# max_iter = %d\n", max_iter );
+
+  double x_ratio = ( x_max - x_min ) / width;
+  double y_ratio = ( y_max - y_min ) / height;
 
   for( int j = 0; j < height; ++j ) {
 
