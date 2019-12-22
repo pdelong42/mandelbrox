@@ -1,15 +1,66 @@
 #include <stdio.h>
+#include <getopt.h>
 
 int main( int argc, char *argv[] ) {
 
+  char format[10] = "P1";
   int width  = 1024;
   int height = 1024;
   int max_iter = 1000;
   double bailout = 4.0;
   double x_min = -2.0, x_max = +2.0;
   double y_min = -2.0, y_max = +2.0;
-  double x_ratio = ( x_max - x_min ) / width;
-  double y_ratio = ( y_max - y_min ) / height;
+
+  static struct option long_options[] = {
+    {  "format", required_argument, 0, 'f' },
+    {   "width", required_argument, 0, 'w' },
+    {  "height", required_argument, 0, 'h' },
+    { "bailout", required_argument, 0, 'b' },
+    { "maxiter", required_argument, 0, 'm' },
+    {         0,                 0, 0,  0  }
+  };
+
+  while( 1 ) {
+
+    int c = getopt_long( argc, argv, "f:m:b:w:h:", long_options, NULL );
+
+    if( c < 0 ) break;
+
+    switch( c ) {
+
+    case 'f':
+      sscanf( optarg, "%9s", format );
+      break;
+
+    case 'm':
+      sscanf( optarg, "%9d", &max_iter );
+      break;
+
+    case 'w':
+      sscanf( optarg, "%9d", &width );
+      break;
+
+    case 'h':
+      sscanf( optarg, "%9d", &height );
+      break;
+
+    case 'b':
+      sscanf( optarg, "%9lf", &bailout );
+      break;
+
+    case '?':
+      break;
+
+    default:
+      printf( "?? getopt returned character code 0%o ??\n", c );
+    }
+  }
+
+  if( optind < argc ) {
+    fprintf( stderr, "non-option ARGV-elements: " );
+    while( optind < argc ) fprintf( stderr, "%s ", argv[optind++] );
+    fprintf( stderr, "\n");
+  }
 
   printf( "P1\n%d %d\n", width, height );
   printf( "# x_min = %f\n", x_min );
@@ -17,6 +68,9 @@ int main( int argc, char *argv[] ) {
   printf( "# y_min = %f\n", y_min );
   printf( "# y_max = %f\n", y_max );
   printf( "# max_iter = %d\n", max_iter );
+
+  double x_ratio = ( x_max - x_min ) / width;
+  double y_ratio = ( y_max - y_min ) / height;
 
   for( int j = 0; j < height; ++j ) {
 
