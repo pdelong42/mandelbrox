@@ -26,3 +26,7 @@ compute options include: MPI, OSG, and GPGPU.
 Let's see, other things for the wishlist: command-line parsing of
 input parameters, color output for the images, run parameters from an
 input file (maybe?).
+
+Instead of specifying a rectangular region explicitly for the complex
+plane, specify an eliptical bounding region instead (axes plus
+center), and work backwards from that to get the rectangular region.
