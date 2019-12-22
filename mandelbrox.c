@@ -3,6 +3,7 @@
 
 int main( int argc, char *argv[] ) {
 
+  char *format = "P1";
   int width  = 1024;
   int height = 1024;
   int max_iter = 1000;
@@ -23,7 +24,7 @@ int main( int argc, char *argv[] ) {
 
     int option_index = 0;
 
-    int c = getopt_long( argc, argv, "m:b:w:h:", long_options, &option_index );
+    int c = getopt_long( argc, argv, "f:m:b:w:h:", long_options, &option_index );
 
     if( c < 0 ) break;
 
@@ -32,6 +33,10 @@ int main( int argc, char *argv[] ) {
       printf( "option %s", long_options[option_index].name );
       if( optarg ) printf(" with arg %s", optarg);
       printf( "\n" );
+      break;
+
+    case 'f':
+      sscanf( optarg, "%s", format );
       break;
 
     case 'm':
