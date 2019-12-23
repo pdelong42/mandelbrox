@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <getopt.h>
 
 int main( int argc, char *argv[] ) {
@@ -60,7 +61,7 @@ int main( int argc, char *argv[] ) {
   if( optind < argc ) {
     fprintf( stderr, "non-option ARGV-elements: " );
     while( optind < argc ) fprintf( stderr, "%s ", argv[optind++] );
-    fprintf( stderr, "\n");
+    fprintf( stderr, "\n" );
   }
 
   if( width <= 0 || height <= 0 ) {
@@ -68,7 +69,19 @@ int main( int argc, char *argv[] ) {
     exit( EXIT_FAILURE );
   }
 
-  printf( "P1\n%d %d\n", width, height );
+  int fmt_flag = 0;
+  size_t fn = strlen( format );
+
+  if( fn == 2 && 0 == strncmp( "P1", format, fn ) ) {
+    ++fmt_flag;
+  }
+
+  if( fmt_flag == 0 ) {
+    fprintf( stderr, "ERROR: specified format \"%s\" is not recognized/supported\n", format );
+    exit( EXIT_FAILURE );
+  }
+
+  printf( "%s\n%d %d\n", format, width, height );
   printf( "# x_min = %f\n", x_min );
   printf( "# x_max = %f\n", x_max );
   printf( "# y_min = %f\n", y_min );
