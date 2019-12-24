@@ -3,6 +3,17 @@
 #include <string.h>
 #include <getopt.h>
 
+void preamble_netpbm( char *format, int width, int height, double x_min, double x_max, double y_min, double y_max, int max_iter ) {
+
+  printf( "%s\n", format );
+  printf( "%d %d\n", width, height );
+  printf( "# x_min = %f\n", x_min );
+  printf( "# x_max = %f\n", x_max );
+  printf( "# y_min = %f\n", y_min );
+  printf( "# y_max = %f\n", y_max );
+  printf( "# max_iter = %d\n", max_iter );
+}
+
 int main( int argc, char *argv[] ) {
 
   char format[10] = "P1";
@@ -71,9 +82,18 @@ int main( int argc, char *argv[] ) {
 
   int fmt_flag = 0;
   size_t fn = strlen( format );
+  void (*preamble)( char *format, int width, int height, double x_min, double x_max, double y_min, double y_max, int max_iter );
 
-  if( fn == 2 && 0 == strncmp( "P1", format, fn ) ) {
-    ++fmt_flag;
+  if( fn == 2 ) {
+    if( 0 == strncmp( "P1", format, fn )
+     || 0 == strncmp( "P2", format, fn )
+     || 0 == strncmp( "P3", format, fn )
+     || 0 == strncmp( "P4", format, fn )
+     || 0 == strncmp( "P5", format, fn )
+     || 0 == strncmp( "P6", format, fn ) ) {
+      preamble = &preamble_netpbm;
+      ++fmt_flag;
+    }
   }
 
   if( fmt_flag == 0 ) {
@@ -81,12 +101,7 @@ int main( int argc, char *argv[] ) {
     exit( EXIT_FAILURE );
   }
 
-  printf( "%s\n%d %d\n", format, width, height );
-  printf( "# x_min = %f\n", x_min );
-  printf( "# x_max = %f\n", x_max );
-  printf( "# y_min = %f\n", y_min );
-  printf( "# y_max = %f\n", y_max );
-  printf( "# max_iter = %d\n", max_iter );
+  preamble( format, width, height, x_min, x_max, y_min, y_max, max_iter );
 
   double x_ratio = ( x_max - x_min ) / width;
   double y_ratio = ( y_max - y_min ) / height;
