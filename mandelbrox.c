@@ -1,16 +1,54 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <getopt.h>
+
+struct params {
+  double x_min;
+  double x_max;
+  double y_min;
+  double y_max;
+  int max_iter;
+  double bailout;
+};
+
+void preamble_netpbm( char *format, int width, int height, struct params p ) {
+
+  printf( "%s\n", format );
+  printf( "# x_min = %f\n", p.x_min );
+  printf( "# x_max = %f\n", p.x_max );
+  printf( "# y_min = %f\n", p.y_min );
+  printf( "# y_max = %f\n", p.y_max );
+  printf( "# bailout = %f\n", p.bailout );
+  printf( "# max_iter = %d\n", p.max_iter );
+  printf( "%d %d\n", width, height );
+}
+
+void preamble_netpgm( char *format, int width, int height, struct params p ) {
+
+  preamble_netpbm( format, width, height, p );
+  printf( "255\n" );
+}
+
+void color_netpbm( int iter, int max_iter ) {
+  printf( ( iter < max_iter ) ? "0 " : "1 " );
+}
+
+void color_netpgm( int iter, int max_iter ) {
+  printf( "%d ", ( 256 * ( max_iter - iter ) ) / max_iter );
+}
 
 int main( int argc, char *argv[] ) {
 
   char format[10] = "P1";
   int width  = 1024;
   int height = 1024;
-  int max_iter = 1000;
-  double bailout = 4.0;
-  double x_min = -2.0, x_max = +2.0;
-  double y_min = -2.0, y_max = +2.0;
+  struct params p;
+
+  p.max_iter = 1000;
+  p.bailout = 4.0;
+  p.x_min = -2.0, p.x_max = +2.0;
+  p.y_min = -2.0, p.y_max = +2.0;
 
   static struct option long_options[] = {
     {  "format", required_argument, 0, 'f' },
@@ -34,7 +72,7 @@ int main( int argc, char *argv[] ) {
       break;
 
     case 'm':
-      sscanf( optarg, "%9d", &max_iter );
+      sscanf( optarg, "%9d", &p.max_iter );
       break;
 
     case 'w':
@@ -46,7 +84,7 @@ int main( int argc, char *argv[] ) {
       break;
 
     case 'b':
-      sscanf( optarg, "%9lf", &bailout );
+      sscanf( optarg, "%9lf", &p.bailout );
       break;
 
     case '?':
@@ -60,7 +98,7 @@ int main( int argc, char *argv[] ) {
   if( optind < argc ) {
     fprintf( stderr, "non-option ARGV-elements: " );
     while( optind < argc ) fprintf( stderr, "%s ", argv[optind++] );
-    fprintf( stderr, "\n");
+    fprintf( stderr, "\n" );
   }
 
   if( width <= 0 || height <= 0 ) {
@@ -68,15 +106,39 @@ int main( int argc, char *argv[] ) {
     exit( EXIT_FAILURE );
   }
 
-  printf( "P1\n%d %d\n", width, height );
-  printf( "# x_min = %f\n", x_min );
-  printf( "# x_max = %f\n", x_max );
-  printf( "# y_min = %f\n", y_min );
-  printf( "# y_max = %f\n", y_max );
-  printf( "# max_iter = %d\n", max_iter );
+  int fmt_flag = 0;
+  size_t fn = strlen( format );
+  void (*print_preamble)( char *format, int width, int height, struct params p );
+  void (*print_color)( int iter, int max_iter );
 
-  double x_ratio = ( x_max - x_min ) / width;
-  double y_ratio = ( y_max - y_min ) / height;
+  if( fn == 2 ) {
+    if( 0 == strncmp( "P1", format, fn ) ) {
+      print_preamble = &preamble_netpbm;
+      print_color    =    &color_netpbm;
+      ++fmt_flag;
+    }
+    if( 0 == strncmp( "P2", format, fn )
+     || 0 == strncmp( "P3", format, fn )
+     || 0 == strncmp( "P4", format, fn )
+     || 0 == strncmp( "P5", format, fn )
+     || 0 == strncmp( "P6", format, fn ) ) {
+      print_preamble = &preamble_netpgm;
+      print_color    =    &color_netpgm;
+      ++fmt_flag;
+    }
+  }
+
+  if( fmt_flag == 0 ) {
+    fprintf( stderr, "ERROR: specified format \"%s\" is not recognized/supported\n", format );
+    exit( EXIT_FAILURE );
+  }
+
+  print_preamble( format, width, height, p );
+
+  double x_ratio = ( p.x_max - p.x_min ) / width;
+  double y_ratio = ( p.y_max - p.y_min ) / height;
+  double bailout = p.bailout;
+  int max_iter = p.max_iter;
 
   for( int j = 0; j < height; ++j ) {
 
@@ -85,8 +147,8 @@ int main( int argc, char *argv[] ) {
       int iter = 0;
       double x = 0.0, xx = 0.0;
       double y = 0.0, yy = 0.0;
-      double a = x_min + i * x_ratio;
-      double b = y_min + j * y_ratio;
+      double a = p.x_min + i * x_ratio;
+      double b = p.y_min + j * y_ratio;
 
       while( ++iter < max_iter ) {
 
@@ -101,7 +163,7 @@ int main( int argc, char *argv[] ) {
         x = x_new, y = y_new;
       }
 
-      printf( ( iter < max_iter ) ? "0 " : "1 " );
+      print_color( iter, max_iter );
     }
     printf( "\n" );
   }
