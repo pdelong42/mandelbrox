@@ -1,7 +1,11 @@
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <getopt.h>
+
+double twopi = 2.0 * M_PI;
+double phi = 2.0 * M_PI / 3.0;
 
 struct params {
   double x_min;
@@ -30,12 +34,31 @@ void preamble_netpgm( char *format, int width, int height, struct params p ) {
   printf( "255\n" );
 }
 
+void preamble_netppm( char *format, int width, int height, struct params p ) {
+
+  preamble_netpbm( format, width, height, p );
+  printf( "255\n" );
+}
+
 void color_netpbm( int iter, int max_iter ) {
   printf( ( iter < max_iter ) ? "0 " : "1 " );
 }
 
 void color_netpgm( int iter, int max_iter ) {
   printf( "%d ", ( 256 * ( max_iter - iter ) ) / max_iter );
+}
+
+void color_netppm( int iter, int max_iter ) {
+
+  if( iter < max_iter ) {
+    double theta = twopi * iter / (double)max_iter;
+    double red   = 128 + 128 * sin( theta - phi );
+    double green = 128 + 128 * sin( theta       );
+    double blue  = 128 + 128 * sin( theta + phi );
+    printf( "%d %d %d ", (int)red, (int)green, (int)blue );
+  } else {
+    printf( "0 0 0 " );
+  }
 }
 
 int main( int argc, char *argv[] ) {
@@ -117,13 +140,17 @@ int main( int argc, char *argv[] ) {
       print_color    =    &color_netpbm;
       ++fmt_flag;
     }
-    if( 0 == strncmp( "P2", format, fn )
-     || 0 == strncmp( "P3", format, fn )
+    if( 0 == strncmp( "P2", format, fn ) ) {
+      print_preamble = &preamble_netpgm;
+      print_color    =    &color_netpgm;
+      ++fmt_flag;
+    }
+    if( 0 == strncmp( "P3", format, fn )
      || 0 == strncmp( "P4", format, fn )
      || 0 == strncmp( "P5", format, fn )
      || 0 == strncmp( "P6", format, fn ) ) {
-      print_preamble = &preamble_netpgm;
-      print_color    =    &color_netpgm;
+      print_preamble = &preamble_netppm;
+      print_color    =    &color_netppm;
       ++fmt_flag;
     }
   }
