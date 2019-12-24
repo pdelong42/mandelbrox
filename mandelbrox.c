@@ -14,6 +14,10 @@ void preamble_netpbm( char *format, int width, int height, double x_min, double 
   printf( "# max_iter = %d\n", max_iter );
 }
 
+void color_netpbm( int iter, int max_iter ) {
+  printf( ( iter < max_iter ) ? "0 " : "1 " );
+}
+
 int main( int argc, char *argv[] ) {
 
   char format[10] = "P1";
@@ -83,6 +87,7 @@ int main( int argc, char *argv[] ) {
   int fmt_flag = 0;
   size_t fn = strlen( format );
   void (*preamble)( char *format, int width, int height, double x_min, double x_max, double y_min, double y_max, int max_iter );
+  void (*print_color)( int iter, int max_iter );
 
   if( fn == 2 ) {
     if( 0 == strncmp( "P1", format, fn )
@@ -92,6 +97,7 @@ int main( int argc, char *argv[] ) {
      || 0 == strncmp( "P5", format, fn )
      || 0 == strncmp( "P6", format, fn ) ) {
       preamble = &preamble_netpbm;
+      print_color    =    &color_netpbm;
       ++fmt_flag;
     }
   }
@@ -129,7 +135,7 @@ int main( int argc, char *argv[] ) {
         x = x_new, y = y_new;
       }
 
-      printf( ( iter < max_iter ) ? "0 " : "1 " );
+      print_color( iter, max_iter );
     }
     printf( "\n" );
   }
