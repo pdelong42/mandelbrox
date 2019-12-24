@@ -15,17 +15,27 @@ struct params {
 void preamble_netpbm( char *format, int width, int height, struct params p ) {
 
   printf( "%s\n", format );
-  printf( "%d %d\n", width, height );
   printf( "# x_min = %f\n", p.x_min );
   printf( "# x_max = %f\n", p.x_max );
   printf( "# y_min = %f\n", p.y_min );
   printf( "# y_max = %f\n", p.y_max );
   printf( "# bailout = %f\n", p.bailout );
   printf( "# max_iter = %d\n", p.max_iter );
+  printf( "%d %d\n", width, height );
+}
+
+void preamble_netpgm( char *format, int width, int height, struct params p ) {
+
+  preamble_netpbm( format, width, height, p );
+  printf( "255\n" );
 }
 
 void color_netpbm( int iter, int max_iter ) {
   printf( ( iter < max_iter ) ? "0 " : "1 " );
+}
+
+void color_netpgm( int iter, int max_iter ) {
+  printf( "%d ", ( 256 * ( max_iter - iter ) ) / max_iter );
 }
 
 int main( int argc, char *argv[] ) {
@@ -102,14 +112,18 @@ int main( int argc, char *argv[] ) {
   void (*print_color)( int iter, int max_iter );
 
   if( fn == 2 ) {
-    if( 0 == strncmp( "P1", format, fn )
-     || 0 == strncmp( "P2", format, fn )
+    if( 0 == strncmp( "P1", format, fn ) ) {
+      print_preamble = &preamble_netpbm;
+      print_color    =    &color_netpbm;
+      ++fmt_flag;
+    }
+    if( 0 == strncmp( "P2", format, fn )
      || 0 == strncmp( "P3", format, fn )
      || 0 == strncmp( "P4", format, fn )
      || 0 == strncmp( "P5", format, fn )
      || 0 == strncmp( "P6", format, fn ) ) {
-      print_preamble = &preamble_netpbm;
-      print_color    =    &color_netpbm;
+      print_preamble = &preamble_netpgm;
+      print_color    =    &color_netpgm;
       ++fmt_flag;
     }
   }
