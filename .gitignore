@@ -1,4 +1,7 @@
 mandelbrox
 mandelbrox-static
 tmp
+*.pbm
+*.pgm
+*.ppm
 *~

@@ -54,8 +54,8 @@ int main( int argc, char *argv[] ) {
     {  "format", required_argument, 0, 'f' },
     {   "width", required_argument, 0, 'w' },
     {  "height", required_argument, 0, 'h' },
-    { "bailout", required_argument, 0, 'b' },
     { "maxiter", required_argument, 0, 'm' },
+    { "bailout", required_argument, 0, 'b' },
     {         0,                 0, 0,  0  }
   };
 
@@ -71,16 +71,16 @@ int main( int argc, char *argv[] ) {
       sscanf( optarg, "%9s", format );
       break;
 
-    case 'm':
-      sscanf( optarg, "%9d", &p.max_iter );
-      break;
-
     case 'w':
       sscanf( optarg, "%9d", &width );
       break;
 
     case 'h':
       sscanf( optarg, "%9d", &height );
+      break;
+
+    case 'm':
+      sscanf( optarg, "%9d", &p.max_iter );
       break;
 
     case 'b':
