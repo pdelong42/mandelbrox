@@ -3,15 +3,25 @@
 #include <string.h>
 #include <getopt.h>
 
-void preamble_netpbm( char *format, int width, int height, double x_min, double x_max, double y_min, double y_max, int max_iter ) {
+struct params {
+  double x_min;
+  double x_max;
+  double y_min;
+  double y_max;
+  int max_iter;
+  double bailout;
+};
+
+void preamble_netpbm( char *format, int width, int height, struct params p ) {
 
   printf( "%s\n", format );
   printf( "%d %d\n", width, height );
-  printf( "# x_min = %f\n", x_min );
-  printf( "# x_max = %f\n", x_max );
-  printf( "# y_min = %f\n", y_min );
-  printf( "# y_max = %f\n", y_max );
-  printf( "# max_iter = %d\n", max_iter );
+  printf( "# x_min = %f\n", p.x_min );
+  printf( "# x_max = %f\n", p.x_max );
+  printf( "# y_min = %f\n", p.y_min );
+  printf( "# y_max = %f\n", p.y_max );
+  printf( "# bailout = %f\n", p.bailout );
+  printf( "# max_iter = %d\n", p.max_iter );
 }
 
 void color_netpbm( int iter, int max_iter ) {
@@ -23,10 +33,12 @@ int main( int argc, char *argv[] ) {
   char format[10] = "P1";
   int width  = 1024;
   int height = 1024;
-  int max_iter = 1000;
-  double bailout = 4.0;
-  double x_min = -2.0, x_max = +2.0;
-  double y_min = -2.0, y_max = +2.0;
+  struct params p;
+
+  p.max_iter = 1000;
+  p.bailout = 4.0;
+  p.x_min = -2.0, p.x_max = +2.0;
+  p.y_min = -2.0, p.y_max = +2.0;
 
   static struct option long_options[] = {
     {  "format", required_argument, 0, 'f' },
@@ -50,7 +62,7 @@ int main( int argc, char *argv[] ) {
       break;
 
     case 'm':
-      sscanf( optarg, "%9d", &max_iter );
+      sscanf( optarg, "%9d", &p.max_iter );
       break;
 
     case 'w':
@@ -62,7 +74,7 @@ int main( int argc, char *argv[] ) {
       break;
 
     case 'b':
-      sscanf( optarg, "%9lf", &bailout );
+      sscanf( optarg, "%9lf", &p.bailout );
       break;
 
     case '?':
@@ -86,7 +98,7 @@ int main( int argc, char *argv[] ) {
 
   int fmt_flag = 0;
   size_t fn = strlen( format );
-  void (*preamble)( char *format, int width, int height, double x_min, double x_max, double y_min, double y_max, int max_iter );
+  void (*print_preamble)( char *format, int width, int height, struct params p );
   void (*print_color)( int iter, int max_iter );
 
   if( fn == 2 ) {
@@ -96,7 +108,7 @@ int main( int argc, char *argv[] ) {
      || 0 == strncmp( "P4", format, fn )
      || 0 == strncmp( "P5", format, fn )
      || 0 == strncmp( "P6", format, fn ) ) {
-      preamble = &preamble_netpbm;
+      print_preamble = &preamble_netpbm;
       print_color    =    &color_netpbm;
       ++fmt_flag;
     }
@@ -107,10 +119,12 @@ int main( int argc, char *argv[] ) {
     exit( EXIT_FAILURE );
   }
 
-  preamble( format, width, height, x_min, x_max, y_min, y_max, max_iter );
+  print_preamble( format, width, height, p );
 
-  double x_ratio = ( x_max - x_min ) / width;
-  double y_ratio = ( y_max - y_min ) / height;
+  double x_ratio = ( p.x_max - p.x_min ) / width;
+  double y_ratio = ( p.y_max - p.y_min ) / height;
+  double bailout = p.bailout;
+  int max_iter = p.max_iter;
 
   for( int j = 0; j < height; ++j ) {
 
@@ -119,8 +133,8 @@ int main( int argc, char *argv[] ) {
       int iter = 0;
       double x = 0.0, xx = 0.0;
       double y = 0.0, yy = 0.0;
-      double a = x_min + i * x_ratio;
-      double b = y_min + j * y_ratio;
+      double a = p.x_min + i * x_ratio;
+      double b = p.y_min + j * y_ratio;
 
       while( ++iter < max_iter ) {
 
