@@ -7,13 +7,15 @@
 double twopi = 2.0 * M_PI;
 double phi = 2.0 * M_PI / 3.0;
 
+int c_max = 256;
+
 struct params {
   double x_min;
   double x_max;
   double y_min;
   double y_max;
-  int max_iter;
   double bailout;
+  int max_iter;
 };
 
 void preamble_netpbm( char *format, int width, int height, struct params p ) {
@@ -31,13 +33,13 @@ void preamble_netpbm( char *format, int width, int height, struct params p ) {
 void preamble_netpgm( char *format, int width, int height, struct params p ) {
 
   preamble_netpbm( format, width, height, p );
-  printf( "255\n" );
+  printf( "%d\n", c_max - 1 );
 }
 
 void preamble_netppm( char *format, int width, int height, struct params p ) {
 
   preamble_netpbm( format, width, height, p );
-  printf( "255\n" );
+  printf( "%d\n", c_max - 1 );
 }
 
 void color_netpbm( int iter, int max_iter ) {
@@ -45,16 +47,16 @@ void color_netpbm( int iter, int max_iter ) {
 }
 
 void color_netpgm( int iter, int max_iter ) {
-  printf( "%d ", ( 256 * ( max_iter - iter ) ) / max_iter );
+  printf( "%d ", ( c_max * ( max_iter - iter ) ) / max_iter );
 }
 
 void color_netppm( int iter, int max_iter ) {
 
   if( iter < max_iter ) {
     double theta = twopi * iter / (double)max_iter;
-    double red   = 128 + 128 * sin( theta - phi );
-    double green = 128 + 128 * sin( theta       );
-    double blue  = 128 + 128 * sin( theta + phi );
+    double red   = 0.5 * c_max * ( 1 + sin( theta - phi ) );
+    double green = 0.5 * c_max * ( 1 + sin( theta       ) );
+    double blue  = 0.5 * c_max * ( 1 + sin( theta + phi ) );
     printf( "%d %d %d ", (int)red, (int)green, (int)blue );
   } else {
     printf( "0 0 0 " );
