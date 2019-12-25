@@ -5,7 +5,7 @@
 #include <getopt.h>
 
 double twopi = 2.0 * M_PI;
-double phi = 2.0 * M_PI / 3.0;
+double third = 2.0 * M_PI / 3.0;
 
 int c_max = 256;
 
@@ -54,9 +54,9 @@ void color_netppm( int iter, int max_iter ) {
 
   if( iter < max_iter ) {
     double theta = twopi * iter / (double)max_iter;
-    double red   = 0.5 * c_max * ( 1 + sin( theta - phi ) );
-    double green = 0.5 * c_max * ( 1 + sin( theta       ) );
-    double blue  = 0.5 * c_max * ( 1 + sin( theta + phi ) );
+    double red   = 0.5 * c_max * ( 1 + sin( theta - third ) );
+    double green = 0.5 * c_max * ( 1 + sin( theta         ) );
+    double blue  = 0.5 * c_max * ( 1 + sin( theta + third ) );
     printf( "%d %d %d ", (int)red, (int)green, (int)blue );
   } else {
     printf( "0 0 0 " );
