@@ -1,15 +1,24 @@
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <getopt.h>
+
+int c_max = 256;
+
+int mu = 1;
+int nu = 100;
+
+double twopi = 2.0 * M_PI;
+double third = 2.0 * M_PI / 3.0;
 
 struct params {
   double x_min;
   double x_max;
   double y_min;
   double y_max;
-  int max_iter;
   double bailout;
+  int max_iter;
 };
 
 void preamble_netpbm( char *format, int width, int height, struct params p ) {
@@ -27,7 +36,13 @@ void preamble_netpbm( char *format, int width, int height, struct params p ) {
 void preamble_netpgm( char *format, int width, int height, struct params p ) {
 
   preamble_netpbm( format, width, height, p );
-  printf( "255\n" );
+  printf( "%d\n", c_max - 1 );
+}
+
+void preamble_netppm( char *format, int width, int height, struct params p ) {
+
+  preamble_netpbm( format, width, height, p );
+  printf( "%d\n", c_max - 1 );
 }
 
 void color_netpbm( int iter, int max_iter ) {
@@ -35,12 +50,28 @@ void color_netpbm( int iter, int max_iter ) {
 }
 
 void color_netpgm( int iter, int max_iter ) {
-  printf( "%d ", ( 256 * ( max_iter - iter ) ) / max_iter );
+  printf( "%d ", ( c_max * ( max_iter - iter ) ) / max_iter );
+}
+
+void color_netppm( int iter, int max_iter ) {
+
+  if( iter < max_iter ) {
+    double phi   = twopi / mu;
+    double omega = twopi * nu;
+    double ratio = iter / (double)max_iter;
+    double theta = phi + omega * ratio;
+    double red   = 0.5 * c_max * ( 1 + sin( theta - third ) );
+    double green = 0.5 * c_max * ( 1 + sin( theta         ) );
+    double blue  = 0.5 * c_max * ( 1 + sin( theta + third ) );
+    printf( "%d %d %d ", (int)red, (int)green, (int)blue );
+  } else {
+    printf( "0 0 0 " );
+  }
 }
 
 int main( int argc, char *argv[] ) {
 
-  char format[10] = "P1";
+  char format[10] = "P3";
   int width  = 1024;
   int height = 1024;
   struct params p;
@@ -54,14 +85,16 @@ int main( int argc, char *argv[] ) {
     {  "format", required_argument, 0, 'f' },
     {   "width", required_argument, 0, 'w' },
     {  "height", required_argument, 0, 'h' },
-    { "maxiter", required_argument, 0, 'm' },
+    { "Maxiter", required_argument, 0, 'M' },
     { "bailout", required_argument, 0, 'b' },
+    {      "mu", required_argument, 0, 'm' },
+    {      "nu", required_argument, 0, 'n' },
     {         0,                 0, 0,  0  }
   };
 
   while( 1 ) {
 
-    int c = getopt_long( argc, argv, "f:m:b:w:h:", long_options, NULL );
+    int c = getopt_long( argc, argv, "f:M:b:w:h:m:n:", long_options, NULL );
 
     if( c < 0 ) break;
 
@@ -79,7 +112,7 @@ int main( int argc, char *argv[] ) {
       sscanf( optarg, "%9d", &height );
       break;
 
-    case 'm':
+    case 'M':
       sscanf( optarg, "%9d", &p.max_iter );
       break;
 
@@ -87,11 +120,19 @@ int main( int argc, char *argv[] ) {
       sscanf( optarg, "%9lf", &p.bailout );
       break;
 
+    case 'm':
+      sscanf( optarg, "%9d", &mu );
+      break;
+
+    case 'n':
+      sscanf( optarg, "%9d", &nu );
+      break;
+
     case '?':
       break;
 
     default:
-      printf( "?? getopt returned character code 0%o ??\n", c );
+      fprintf( stderr, "?? getopt returned character code 0x%X ??\n", c );
     }
   }
 
@@ -117,13 +158,17 @@ int main( int argc, char *argv[] ) {
       print_color    =    &color_netpbm;
       ++fmt_flag;
     }
-    if( 0 == strncmp( "P2", format, fn )
-     || 0 == strncmp( "P3", format, fn )
+    if( 0 == strncmp( "P2", format, fn ) ) {
+      print_preamble = &preamble_netpgm;
+      print_color    =    &color_netpgm;
+      ++fmt_flag;
+    }
+    if( 0 == strncmp( "P3", format, fn )
      || 0 == strncmp( "P4", format, fn )
      || 0 == strncmp( "P5", format, fn )
      || 0 == strncmp( "P6", format, fn ) ) {
-      print_preamble = &preamble_netpgm;
-      print_color    =    &color_netpgm;
+      print_preamble = &preamble_netppm;
+      print_color    =    &color_netppm;
       ++fmt_flag;
     }
   }
