@@ -4,10 +4,12 @@
 #include <string.h>
 #include <getopt.h>
 
+int c_max = 256;
+
 double twopi = 2.0 * M_PI;
 double third = 2.0 * M_PI / 3.0;
-
-int c_max = 256;
+double nu    = 1.0;
+double mu    = 1.0;
 
 struct params {
   double x_min;
@@ -53,7 +55,10 @@ void color_netpgm( int iter, int max_iter ) {
 void color_netppm( int iter, int max_iter ) {
 
   if( iter < max_iter ) {
-    double theta = twopi * iter / (double)max_iter;
+    double phi   = twopi / mu;
+    double omega = twopi / nu;
+    double ratio = iter / (double)max_iter;
+    double theta = phi + omega * ratio;
     double red   = 0.5 * c_max * ( 1 + sin( theta - third ) );
     double green = 0.5 * c_max * ( 1 + sin( theta         ) );
     double blue  = 0.5 * c_max * ( 1 + sin( theta + third ) );
