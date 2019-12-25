@@ -84,14 +84,14 @@ int main( int argc, char *argv[] ) {
     {  "format", required_argument, 0, 'f' },
     {   "width", required_argument, 0, 'w' },
     {  "height", required_argument, 0, 'h' },
-    { "maxiter", required_argument, 0, 'm' },
+    { "Maxiter", required_argument, 0, 'M' },
     { "bailout", required_argument, 0, 'b' },
     {         0,                 0, 0,  0  }
   };
 
   while( 1 ) {
 
-    int c = getopt_long( argc, argv, "f:m:b:w:h:", long_options, NULL );
+    int c = getopt_long( argc, argv, "f:M:b:w:h:", long_options, NULL );
 
     if( c < 0 ) break;
 
@@ -109,7 +109,7 @@ int main( int argc, char *argv[] ) {
       sscanf( optarg, "%9d", &height );
       break;
 
-    case 'm':
+    case 'M':
       sscanf( optarg, "%9d", &p.max_iter );
       break;
 
