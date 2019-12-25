@@ -6,10 +6,11 @@
 
 int c_max = 256;
 
+int mu = 1;
+int nu = 1;
+
 double twopi = 2.0 * M_PI;
 double third = 2.0 * M_PI / 3.0;
-double nu    = 1.0;
-double mu    = 1.0;
 
 struct params {
   double x_min;
