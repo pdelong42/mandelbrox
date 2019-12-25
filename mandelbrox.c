@@ -87,12 +87,14 @@ int main( int argc, char *argv[] ) {
     {  "height", required_argument, 0, 'h' },
     { "Maxiter", required_argument, 0, 'M' },
     { "bailout", required_argument, 0, 'b' },
+    {      "mu", required_argument, 0, 'm' },
+    {      "nu", required_argument, 0, 'n' },
     {         0,                 0, 0,  0  }
   };
 
   while( 1 ) {
 
-    int c = getopt_long( argc, argv, "f:M:b:w:h:", long_options, NULL );
+    int c = getopt_long( argc, argv, "f:M:b:w:h:m:n:", long_options, NULL );
 
     if( c < 0 ) break;
 
@@ -116,6 +118,14 @@ int main( int argc, char *argv[] ) {
 
     case 'b':
       sscanf( optarg, "%9lf", &p.bailout );
+      break;
+
+    case 'm':
+      sscanf( optarg, "%9d", &mu );
+      break;
+
+    case 'n':
+      sscanf( optarg, "%9d", &nu );
       break;
 
     case '?':
