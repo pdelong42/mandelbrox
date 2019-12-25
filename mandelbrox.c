@@ -7,7 +7,7 @@
 int c_max = 256;
 
 int mu = 1;
-int nu = 1;
+int nu = 100;
 
 double twopi = 2.0 * M_PI;
 double third = 2.0 * M_PI / 3.0;
@@ -57,7 +57,7 @@ void color_netppm( int iter, int max_iter ) {
 
   if( iter < max_iter ) {
     double phi   = twopi / mu;
-    double omega = twopi / nu;
+    double omega = twopi * nu;
     double ratio = iter / (double)max_iter;
     double theta = phi + omega * ratio;
     double red   = 0.5 * c_max * ( 1 + sin( theta - third ) );
