@@ -121,7 +121,7 @@ int main( int argc, char *argv[] ) {
       break;
 
     default:
-      printf( "?? getopt returned character code 0%o ??\n", c );
+      fprintf( stderr, "?? getopt returned character code 0x%X ??\n", c );
     }
   }
 
