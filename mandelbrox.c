@@ -71,7 +71,7 @@ void color_netppm( int iter, int max_iter ) {
 
 int main( int argc, char *argv[] ) {
 
-  char format[10] = "P1";
+  char format[10] = "P3";
   int width  = 1024;
   int height = 1024;
   struct params p;

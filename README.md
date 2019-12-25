@@ -2,11 +2,11 @@ This is a Mandelbrot Set sandbox (hence the name: mandelbrox).
 
 Sample usage:
 
-   ./mandelbrox > foo.pgm
+   ./mandelbrox > foo.ppm
 
 And then...
 
-   geeqie foo.pgm
+   geeqie foo.ppm
 
 (...or equivalent image viewer that understands PNM formats.)
 
