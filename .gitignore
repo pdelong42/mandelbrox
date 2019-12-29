@@ -4,4 +4,6 @@ tmp
 *.pbm
 *.pgm
 *.ppm
+*.png
+*.gif
 *~
