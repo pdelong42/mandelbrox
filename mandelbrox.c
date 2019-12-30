@@ -21,7 +21,7 @@ struct params {
   int max_iter;
 };
 
-void preamble_netpbm( char *format, int width, int height, struct params p ) {
+void preamble_common( char *format, int width, int height, struct params p ) {
 
   printf( "%s\n", format );
   printf( "# x_min = %f\n", p.x_min );
@@ -30,6 +30,11 @@ void preamble_netpbm( char *format, int width, int height, struct params p ) {
   printf( "# y_max = %f\n", p.y_max );
   printf( "# bailout = %f\n", p.bailout );
   printf( "# max_iter = %d\n", p.max_iter );
+}
+
+void preamble_netpbm( char *format, int width, int height, struct params p ) {
+
+  preamble_common( format, width, height, p );
   printf( "%d %d\n", width, height );
 }
 
