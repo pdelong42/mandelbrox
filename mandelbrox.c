@@ -163,17 +163,14 @@ int main( int argc, char *argv[] ) {
       print_color    =    &color_netpgm;
       ++fmt_flag;
     }
-    if( 0 == strncmp( "P3", format, fn )
-     || 0 == strncmp( "P4", format, fn )
-     || 0 == strncmp( "P5", format, fn )
-     || 0 == strncmp( "P6", format, fn ) ) {
+    if( 0 == strncmp( "P3", format, fn ) ) {
       print_preamble = &preamble_netppm;
       print_color    =    &color_netppm;
       ++fmt_flag;
     }
   }
 
-  if( fmt_flag == 0 ) {
+  if( fmt_flag == 0 ) { /* P4, P5, and P6 formats are not yet implemented */
     fprintf( stderr, "ERROR: specified format \"%s\" is not recognized/supported\n", format );
     exit( EXIT_FAILURE );
   }
