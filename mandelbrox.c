@@ -4,7 +4,7 @@
 #include <string.h>
 #include <getopt.h>
 
-int c_max = 256;
+int c_max = 1<<8 - 1;
 
 int mu = 1;
 int nu = 100;
@@ -46,13 +46,13 @@ void preamble_netpbm( char *format, int width, int height, struct params p ) {
 void preamble_netpgm( char *format, int width, int height, struct params p ) {
 
   preamble_netpbm( format, width, height, p );
-  printf( "%d\n", c_max - 1 );
+  printf( "%d\n", c_max );
 }
 
 void preamble_netppm( char *format, int width, int height, struct params p ) {
 
   preamble_netpbm( format, width, height, p );
-  printf( "%d\n", c_max - 1 );
+  printf( "%d\n", c_max );
 }
 
 void color_netpbm( int iter, int max_iter ) {
@@ -73,17 +73,17 @@ void color_picker( int iter, int max_iter, struct color *c ) {
 
   tmp = cos( theta - sixth );
   tmp *= tmp;
-  c->red = c_max - 1;
+  c->red = c_max;
   c->red *= tmp;
 
   tmp = cos( theta );
   tmp *= tmp;
-  c->green = c_max - 1;
+  c->green = c_max;
   c->green *= tmp;
 
   tmp = cos( theta + sixth );
   tmp *= tmp;
-  c->blue = c_max - 1;
+  c->blue = c_max;
   c->blue *= tmp;
 }
 
