@@ -4,7 +4,7 @@
 #include <string.h>
 #include <getopt.h>
 
-int c_max = 1<<8 - 1;
+int c_max = (1<<8) - 1;
 
 int mu = 1;
 int nu = 100;
