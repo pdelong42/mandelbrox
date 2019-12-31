@@ -71,17 +71,17 @@ void color_picker( int iter, int max_iter, struct color *c ) {
   double ratio = (double)iter / (double)max_iter;
   double theta = phi + omega * ratio;
 
-  tmp = sin( theta - sixth );
+  tmp = cos( theta - sixth );
   tmp *= tmp;
   c->red = c_max - 1;
   c->red *= tmp;
 
-  tmp = sin( theta );
+  tmp = cos( theta );
   tmp *= tmp;
   c->green = c_max - 1;
   c->green *= tmp;
 
-  tmp = sin( theta + sixth );
+  tmp = cos( theta + sixth );
   tmp *= tmp;
   c->blue = c_max - 1;
   c->blue *= tmp;
