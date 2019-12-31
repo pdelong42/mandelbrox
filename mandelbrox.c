@@ -9,8 +9,13 @@ int c_max = 256;
 int mu = 1;
 int nu = 100;
 
-double twopi = 2.0 * M_PI;
-double third = 2.0 * M_PI / 3.0;
+double sixth = M_PI / 3.0;
+
+struct color {
+  double red;
+  double green;
+  double blue;
+};
 
 struct params {
   double x_min;
@@ -58,17 +63,37 @@ void color_netpgm( int iter, int max_iter ) {
   printf( "%d ", ( c_max * ( max_iter - iter ) ) / max_iter );
 }
 
+void color_picker( int iter, int max_iter, struct color *c ) {
+
+  double tmp;
+  double phi   = M_PI / mu;
+  double omega = M_PI * nu;
+  double ratio = (double)iter / (double)max_iter;
+  double theta = phi + omega * ratio;
+
+  tmp = sin( theta - sixth );
+  tmp *= tmp;
+  c->red = c_max - 1;
+  c->red *= tmp;
+
+  tmp = sin( theta );
+  tmp *= tmp;
+  c->green = c_max - 1;
+  c->green *= tmp;
+
+  tmp = sin( theta + sixth );
+  tmp *= tmp;
+  c->blue = c_max - 1;
+  c->blue *= tmp;
+}
+
 void color_netppm( int iter, int max_iter ) {
 
+  struct color c;
+
   if( iter < max_iter ) {
-    double phi   = twopi / mu;
-    double omega = twopi * nu;
-    double ratio = iter / (double)max_iter;
-    double theta = phi + omega * ratio;
-    double red   = 0.5 * c_max * ( 1 + sin( theta - third ) );
-    double green = 0.5 * c_max * ( 1 + sin( theta         ) );
-    double blue  = 0.5 * c_max * ( 1 + sin( theta + third ) );
-    printf( "%d %d %d ", (int)red, (int)green, (int)blue );
+    color_picker( iter, max_iter, &c );
+    printf( "%d %d %d ", (int)c.red, (int)c.green, (int)c.blue );
   } else {
     printf( "0 0 0 " );
   }
