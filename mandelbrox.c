@@ -65,6 +65,11 @@ void color_netpgm( int iter, int max_iter ) {
 
 void color_picker( int iter, int max_iter, struct color *c ) {
 
+  if( iter >= max_iter ) {
+    c->red = c->green = c->blue = 0;
+    return;
+  }
+
   double tmp;
   double phi   = M_PI / mu;
   double omega = M_PI * nu;
@@ -91,17 +96,21 @@ void color_netppm( int iter, int max_iter ) {
 
   struct color c;
 
-  if( iter < max_iter ) {
-    color_picker( iter, max_iter, &c );
-    printf( "%d %d %d ", (int)c.red, (int)c.green, (int)c.blue );
-  } else {
-    printf( "0 0 0 " );
-  }
+  color_picker( iter, max_iter, &c );
+  printf( "%d %d %d ", (int)c.red, (int)c.green, (int)c.blue );
+}
+
+void color_netpam( int iter, int max_iter ) {
+
+  struct color c;
+
+  color_picker( iter, max_iter, &c );
+  printf( "%c%c%c", (char)c.red, (char)c.green, (char)c.blue );
 }
 
 int main( int argc, char *argv[] ) {
 
-  char format[10] = "P3";
+  char format[10] = "P6";
   int width  = 1024;
   int height = 1024;
   struct params p;
@@ -196,6 +205,11 @@ int main( int argc, char *argv[] ) {
     if( 0 == strncmp( "P3", format, fn ) ) {
       print_preamble = &preamble_netppm;
       print_color    =    &color_netppm;
+      ++fmt_flag;
+    }
+    if( 0 == strncmp( "P6", format, fn ) ) {
+      print_preamble = &preamble_netppm;
+      print_color    =    &color_netpam;
       ++fmt_flag;
     }
   }
