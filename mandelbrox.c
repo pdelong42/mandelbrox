@@ -55,6 +55,13 @@ void preamble_netppm( char *format, int width, int height, struct params p ) {
   printf( "%d\n", c_max );
 }
 
+void preamble_netpam( char *format, int width, int height, struct params p ) {
+
+  preamble_common( format, width, height, p );
+  printf( "WIDTH %d\nHEIGHT %d\nDEPTH 3\nMAXVAL %d\n", width, height, c_max );
+  printf( "TUPLTYPE RGB\nENDHDR\n" );
+}
+
 void color_netpbm( int iter, int max_iter ) {
   printf( ( iter < max_iter ) ? "0 " : "1 " );
 }
@@ -209,6 +216,11 @@ int main( int argc, char *argv[] ) {
     }
     if( 0 == strncmp( "P6", format, fn ) ) {
       print_preamble = &preamble_netppm;
+      print_color    =    &color_netpam;
+      ++fmt_flag;
+    }
+    if( 0 == strncmp( "P7", format, fn ) ) {
+      print_preamble = &preamble_netpam;
       print_color    =    &color_netpam;
       ++fmt_flag;
     }
