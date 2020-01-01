@@ -4,13 +4,18 @@
 #include <string.h>
 #include <getopt.h>
 
-int c_max = 256;
+int c_max = (1<<8) - 1;
 
 int mu = 1;
 int nu = 100;
 
-double twopi = 2.0 * M_PI;
-double third = 2.0 * M_PI / 3.0;
+double sixth = M_PI / 3.0;
+
+struct color {
+  double red;
+  double green;
+  double blue;
+};
 
 struct params {
   double x_min;
@@ -21,7 +26,7 @@ struct params {
   int max_iter;
 };
 
-void preamble_netpbm( char *format, int width, int height, struct params p ) {
+void preamble_common( char *format, int width, int height, struct params p ) {
 
   printf( "%s\n", format );
   printf( "# x_min = %f\n", p.x_min );
@@ -30,19 +35,31 @@ void preamble_netpbm( char *format, int width, int height, struct params p ) {
   printf( "# y_max = %f\n", p.y_max );
   printf( "# bailout = %f\n", p.bailout );
   printf( "# max_iter = %d\n", p.max_iter );
+}
+
+void preamble_netpbm( char *format, int width, int height, struct params p ) {
+
+  preamble_common( format, width, height, p );
   printf( "%d %d\n", width, height );
 }
 
 void preamble_netpgm( char *format, int width, int height, struct params p ) {
 
   preamble_netpbm( format, width, height, p );
-  printf( "%d\n", c_max - 1 );
+  printf( "%d\n", c_max );
 }
 
 void preamble_netppm( char *format, int width, int height, struct params p ) {
 
   preamble_netpbm( format, width, height, p );
-  printf( "%d\n", c_max - 1 );
+  printf( "%d\n", c_max );
+}
+
+void preamble_netpam( char *format, int width, int height, struct params p ) {
+
+  preamble_common( format, width, height, p );
+  printf( "WIDTH %d\nHEIGHT %d\nDEPTH 3\nMAXVAL %d\n", width, height, c_max );
+  printf( "TUPLTYPE RGB\nENDHDR\n" );
 }
 
 void color_netpbm( int iter, int max_iter ) {
@@ -53,25 +70,54 @@ void color_netpgm( int iter, int max_iter ) {
   printf( "%d ", ( c_max * ( max_iter - iter ) ) / max_iter );
 }
 
+void color_picker( int iter, int max_iter, struct color *c ) {
+
+  if( iter >= max_iter ) {
+    c->red = c->green = c->blue = 0;
+    return;
+  }
+
+  double tmp;
+  double phi   = M_PI / mu;
+  double omega = M_PI * nu;
+  double ratio = (double)iter / (double)max_iter;
+  double theta = phi + omega * ratio;
+
+  tmp = cos( theta - sixth );
+  tmp *= tmp;
+  c->red = c_max;
+  c->red *= tmp;
+
+  tmp = cos( theta );
+  tmp *= tmp;
+  c->green = c_max;
+  c->green *= tmp;
+
+  tmp = cos( theta + sixth );
+  tmp *= tmp;
+  c->blue = c_max;
+  c->blue *= tmp;
+}
+
 void color_netppm( int iter, int max_iter ) {
 
-  if( iter < max_iter ) {
-    double phi   = twopi / mu;
-    double omega = twopi * nu;
-    double ratio = iter / (double)max_iter;
-    double theta = phi + omega * ratio;
-    double red   = 0.5 * c_max * ( 1 + sin( theta - third ) );
-    double green = 0.5 * c_max * ( 1 + sin( theta         ) );
-    double blue  = 0.5 * c_max * ( 1 + sin( theta + third ) );
-    printf( "%d %d %d ", (int)red, (int)green, (int)blue );
-  } else {
-    printf( "0 0 0 " );
-  }
+  struct color c;
+
+  color_picker( iter, max_iter, &c );
+  printf( "%d %d %d ", (int)c.red, (int)c.green, (int)c.blue );
+}
+
+void color_netpam( int iter, int max_iter ) {
+
+  struct color c;
+
+  color_picker( iter, max_iter, &c );
+  printf( "%c%c%c", (char)c.red, (char)c.green, (char)c.blue );
 }
 
 int main( int argc, char *argv[] ) {
 
-  char format[10] = "P3";
+  char format[10] = "P6";
   int width  = 1024;
   int height = 1024;
   struct params p;
@@ -163,17 +209,24 @@ int main( int argc, char *argv[] ) {
       print_color    =    &color_netpgm;
       ++fmt_flag;
     }
-    if( 0 == strncmp( "P3", format, fn )
-     || 0 == strncmp( "P4", format, fn )
-     || 0 == strncmp( "P5", format, fn )
-     || 0 == strncmp( "P6", format, fn ) ) {
+    if( 0 == strncmp( "P3", format, fn ) ) {
       print_preamble = &preamble_netppm;
       print_color    =    &color_netppm;
       ++fmt_flag;
     }
+    if( 0 == strncmp( "P6", format, fn ) ) {
+      print_preamble = &preamble_netppm;
+      print_color    =    &color_netpam;
+      ++fmt_flag;
+    }
+    if( 0 == strncmp( "P7", format, fn ) ) {
+      print_preamble = &preamble_netpam;
+      print_color    =    &color_netpam;
+      ++fmt_flag;
+    }
   }
 
-  if( fmt_flag == 0 ) {
+  if( fmt_flag == 0 ) { /* P4 and P5 formats are not yet implemented */
     fprintf( stderr, "ERROR: specified format \"%s\" is not recognized/supported\n", format );
     exit( EXIT_FAILURE );
   }
@@ -210,6 +263,5 @@ int main( int argc, char *argv[] ) {
 
       print_color( iter, max_iter );
     }
-    printf( "\n" );
   }
 }
