@@ -6,8 +6,8 @@
 
 int c_max = (1<<8) - 1;
 
-int mu = 1;
-int nu = 100;
+int mu = 2;
+int nu = 50;
 
 double sixth = M_PI / 3.0;
 
