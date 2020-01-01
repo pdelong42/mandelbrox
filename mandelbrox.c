@@ -226,7 +226,7 @@ int main( int argc, char *argv[] ) {
     }
   }
 
-  if( fmt_flag == 0 ) { /* P4, P5, and P6 formats are not yet implemented */
+  if( fmt_flag == 0 ) { /* P4 and P5 formats are not yet implemented */
     fprintf( stderr, "ERROR: specified format \"%s\" is not recognized/supported\n", format );
     exit( EXIT_FAILURE );
   }
