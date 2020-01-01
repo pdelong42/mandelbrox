@@ -237,6 +237,5 @@ int main( int argc, char *argv[] ) {
 
       print_color( iter, max_iter );
     }
-    printf( "\n" );
   }
 }
