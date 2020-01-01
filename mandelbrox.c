@@ -58,8 +58,8 @@ void preamble_netppm( char *format, int width, int height, struct params p ) {
 void preamble_netpam( char *format, int width, int height, struct params p ) {
 
   preamble_common( format, width, height, p );
-  printf( "WIDTH %d\nHEIGHT %d\nDEPTH 3\nMAXVAL %d\n", width, height, c_max );
-  printf( "TUPLTYPE RGB\nENDHDR\n" );
+  printf( "WIDTH %d\nHEIGHT %d\nMAXVAL %d\n", width, height, c_max );
+  printf( "TUPLTYPE RGB\nDEPTH 3\nENDHDR\n" );
 }
 
 void color_netpbm( int iter, int max_iter ) {
