@@ -26,36 +26,36 @@ struct params {
   int max_iter;
 };
 
-void preamble_common( char *format, int width, int height, struct params p ) {
+void preamble_common( char *format, int width, int height, struct params *p ) {
 
   printf( "%s\n", format );
-  printf( "# x_min = %f\n", p.x_min );
-  printf( "# x_max = %f\n", p.x_max );
-  printf( "# y_min = %f\n", p.y_min );
-  printf( "# y_max = %f\n", p.y_max );
-  printf( "# bailout = %f\n", p.bailout );
-  printf( "# max_iter = %d\n", p.max_iter );
+  printf( "# x_min = %f\n",    p->x_min );
+  printf( "# x_max = %f\n",    p->x_max );
+  printf( "# y_min = %f\n",    p->y_min );
+  printf( "# y_max = %f\n",    p->y_max );
+  printf( "# bailout = %f\n",  p->bailout );
+  printf( "# max_iter = %d\n", p->max_iter );
 }
 
-void preamble_netpbm( char *format, int width, int height, struct params p ) {
+void preamble_netpbm( char *format, int width, int height, struct params *p ) {
 
   preamble_common( format, width, height, p );
   printf( "%d %d\n", width, height );
 }
 
-void preamble_netpgm( char *format, int width, int height, struct params p ) {
+void preamble_netpgm( char *format, int width, int height, struct params *p ) {
 
   preamble_netpbm( format, width, height, p );
   printf( "%d\n", c_max );
 }
 
-void preamble_netppm( char *format, int width, int height, struct params p ) {
+void preamble_netppm( char *format, int width, int height, struct params *p ) {
 
   preamble_netpbm( format, width, height, p );
   printf( "%d\n", c_max );
 }
 
-void preamble_netpam( char *format, int width, int height, struct params p ) {
+void preamble_netpam( char *format, int width, int height, struct params *p ) {
 
   preamble_common( format, width, height, p );
   printf( "WIDTH %d\nHEIGHT %d\nMAXVAL %d\n", width, height, c_max );
@@ -195,7 +195,7 @@ int main( int argc, char *argv[] ) {
 
   int fmt_flag = 0;
   size_t fn = strlen( format );
-  void (*print_preamble)( char *format, int width, int height, struct params p );
+  void (*print_preamble)( char *format, int width, int height, struct params *p );
   void (*print_color)( int iter, int max_iter );
 
   if( fn == 2 ) {
@@ -231,7 +231,7 @@ int main( int argc, char *argv[] ) {
     exit( EXIT_FAILURE );
   }
 
-  print_preamble( format, width, height, p );
+  print_preamble( format, width, height, &p );
 
   double x_ratio = ( p.x_max - p.x_min ) / width;
   double y_ratio = ( p.y_max - p.y_min ) / height;
@@ -252,9 +252,9 @@ int main( int argc, char *argv[] ) {
       while( ++iter < max_iter ) {
 
 	double w  = x + y;
+	double ww = w * w;
         double xx = x * x;
         double yy = y * y;
-	double ww = w * w;
 	double zz = xx + yy;
 
         if( zz > bailout ) break;
