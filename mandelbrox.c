@@ -240,25 +240,27 @@ int main( int argc, char *argv[] ) {
 
   for( int j = 0; j < height; ++j ) {
 
+    double b = p.y_min + j * y_ratio;
+
     for( int i = 0; i < width; ++i ) {
 
-      int iter = 0;
-      double x = 0.0, xx = 0.0;
-      double y = 0.0, yy = 0.0;
       double a = p.x_min + i * x_ratio;
-      double b = p.y_min + j * y_ratio;
+      double x = 0.0;
+      double y = 0.0;
+      int iter = 0;
 
       while( ++iter < max_iter ) {
 
+	double w  = x + y;
         double xx = x * x;
         double yy = y * y;
+	double ww = w * w;
+	double zz = xx + yy;
 
-        if( xx + yy > bailout ) break;
+        if( zz > bailout ) break;
 
-        double x_new = a + xx - yy;
-        double y_new = b + 2 * x * y;
-
-        x = x_new, y = y_new;
+        x = a + xx - yy;
+	y = b + ww - zz;
       }
 
       print_color( iter, max_iter );
