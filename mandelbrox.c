@@ -253,18 +253,19 @@ int main( int argc, char *argv[] ) {
 
   print_preamble( format, width, height, &p );
 
-  double x_ratio = ( p.x_max - p.x_min ) / width;
-  double y_ratio = ( p.y_max - p.y_min ) / height;
+  double x_delta = ( p.x_max - p.x_min ) / width;
+  double y_delta = ( p.y_max - p.y_min ) / height;
   double bailout = p.bailout;
-  int max_iter = p.max_iter;
+  int   max_iter = p.max_iter;
 
   for( int j = 0; j < height; ++j ) {
 
-    double b = p.y_min + j * y_ratio;
+    double b = p.y_min + j * y_delta;
 
     for( int i = 0; i < width; ++i ) {
 
-      double a = p.x_min + i * x_ratio;
+      double a = p.x_min + i * x_delta;
+
       double x = 0.0;
       double y = 0.0;
       int iter = 0;
