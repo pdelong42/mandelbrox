@@ -32,3 +32,5 @@ plane, specify an eliptical bounding region instead (axes plus
 center), and work backwards from that to get the rectangular region.
 
 Consider using the 'm' modifier in format string arguments to scanf().
+
+Look into ways of doing periodicity checking as an optimization.
