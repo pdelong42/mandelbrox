@@ -135,12 +135,16 @@ int main( int argc, char *argv[] ) {
     { "bailout", required_argument, 0, 'b' },
     {      "mu", required_argument, 0, 'm' },
     {      "nu", required_argument, 0, 'n' },
+    {    "xmin", required_argument, 0, 'x' },
+    {    "Xmax", required_argument, 0, 'X' },
+    {    "ymin", required_argument, 0, 'y' },
+    {    "Ymax", required_argument, 0, 'Y' },
     {         0,                 0, 0,  0  }
   };
 
   while( 1 ) {
 
-    int c = getopt_long( argc, argv, "f:M:b:w:h:m:n:", long_options, NULL );
+    int c = getopt_long( argc, argv, "f:M:b:w:h:m:n:x:X:y:Y:", long_options, NULL );
 
     if( c < 0 ) break;
 
@@ -164,6 +168,22 @@ int main( int argc, char *argv[] ) {
 
     case 'b':
       sscanf( optarg, "%9lf", &p.bailout );
+      break;
+
+    case 'x':
+      sscanf( optarg, "%9lf", &p.x_min );
+      break;
+
+    case 'X':
+      sscanf( optarg, "%9lf", &p.x_max );
+      break;
+
+    case 'y':
+      sscanf( optarg, "%9lf", &p.y_min );
+      break;
+
+    case 'Y':
+      sscanf( optarg, "%9lf", &p.y_max );
       break;
 
     case 'm':
