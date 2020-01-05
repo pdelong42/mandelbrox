@@ -258,9 +258,9 @@ int main( int argc, char *argv[] ) {
   double bailout = p.bailout;
   int   max_iter = p.max_iter;
 
-  double b = p.y_min;
+  double b = p.y_max;
 
-  for( int j = 0; j < height; ++j, b += y_delta ) {
+  for( int j = 0; j < height; ++j, b -= y_delta ) {
 
     double a = p.x_min;
 
