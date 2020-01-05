@@ -53,3 +53,6 @@ found to be outside of the Mandelbrot set is counted, and the loop
 exits when that number reaches zero (or when it "effectively" reaches
 zero, as in when it drops below a chosen threshold).  This would
 essentially make max_iter unnecessary.
+
+Make a less naive color-picking algorithm.  Perhaps something
+logarithmic, or which approaches a chosen color as an asymptote.
