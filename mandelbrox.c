@@ -258,17 +258,16 @@ int main( int argc, char *argv[] ) {
   double bailout = p.bailout;
   int   max_iter = p.max_iter;
 
-  for( int j = 0; j < height; ++j ) {
+  double b = p.y_min;
 
-    double b = p.y_min + j * y_delta;
+  for( int j = 0; j < height; ++j, b += y_delta ) {
 
-    for( int i = 0; i < width; ++i ) {
+    double a = p.x_min;
 
-      double a = p.x_min + i * x_delta;
+    for( int i = 0; i < width; ++i, a += x_delta ) {
 
-      double x = 0.0;
-      double y = 0.0;
       int iter = 0;
+      double x = 0.0, y = 0.0;
 
       while( ++iter < max_iter ) {
 
