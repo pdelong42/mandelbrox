@@ -2,13 +2,20 @@
 
 set -euo pipefail
 
+AWKFILE=$(mktemp)
 TMPFILE=$(mktemp)
 
+echo '/^#.*=/ {gsub("^# ","");gsub(" = "," ");print}' > $AWKFILE
+
 function cleanup {
-   echo -n "Cleaning-up: " 1>&2
-   rm -vf $TMPFILE         1>&2
+   echo "Cleaning-up..."    1>&2
+   rm -vf $AWKFILE $TMPFILE 1>&2
 }
 
 trap cleanup SIGTERM SIGINT SIGQUIT SIGABRT SIGKILL EXIT
 
-tee >(awk '/^#.*=/ {gsub("^# ","");gsub(" = "," ");print}' > ${TMPFILE}) | pnmtopng -text $TMPFILE
+tee >(awk -f $AWKFILE > $TMPFILE) | pnmtopng -text $TMPFILE
+
+# Example Usage:
+#
+# ppmtopng.sh < foo.ppm > foo.png
