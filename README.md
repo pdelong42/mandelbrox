@@ -12,7 +12,7 @@ A simple example:
 
 A more complicated example:
 ```
-   /usr/bin/time ./mandelbrox -x -1 -X 0 -y 0 -Y +1 -w 4096 -h 4096 | pnmtopng > foo.png && geeqie foo.png &
+   /usr/bin/time ./mandelbrox -x -1 -X 0 -y 0 -Y +1 -w 4096 -h 4096 | ppmtopng.sh > foo.png && geeqie foo.png &
 ```
 I'm building-up to doing this using some sort of parallel compute.
 But before that, I need to review the basics.
