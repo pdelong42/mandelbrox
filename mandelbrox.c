@@ -115,6 +115,48 @@ void color_netpam( int iter, int max_iter ) {
   printf( "%c%c%c", (char)c.red, (char)c.green, (char)c.blue );
 }
 
+void (*print_preamble)( char *format, int width, int height, struct params *p );
+void (*print_color)( int iter, int max_iter );
+
+void backend_plain( char *format, int width, int height, struct params *pp ) {
+
+  print_preamble( format, width, height, pp );
+
+  double x_delta = ( pp->x_max - pp->x_min ) / width;
+  double y_delta = ( pp->y_max - pp->y_min ) / height;
+  double bailout = pp->bailout;
+  int   max_iter = pp->max_iter;
+
+  double b = pp->y_max;
+
+  for( int j = 0; j < height; ++j, b -= y_delta ) {
+
+    double a = pp->x_min;
+
+    for( int i = 0; i < width; ++i, a += x_delta ) {
+
+      int iter = 0;
+      double x = 0.0, y = 0.0;
+
+      while( ++iter < max_iter ) {
+
+        double w  = x + y;
+        double ww = w * w;
+        double xx = x * x;
+        double yy = y * y;
+        double zz = xx + yy;
+
+        if( zz > bailout ) break;
+
+        x = a + xx - yy;
+        y = b + ww - zz;
+      }
+
+      print_color( iter, max_iter );
+    }
+  }
+}
+
 int main( int argc, char *argv[] ) {
 
   char format[10] = "P6";
@@ -215,8 +257,6 @@ int main( int argc, char *argv[] ) {
 
   int fmt_flag = 0;
   size_t fn = strlen( format );
-  void (*print_preamble)( char *format, int width, int height, struct params *p );
-  void (*print_color)( int iter, int max_iter );
 
   if( fn == 2 ) {
     if( 0 == strncmp( "P1", format, fn ) ) {
@@ -251,39 +291,5 @@ int main( int argc, char *argv[] ) {
     exit( EXIT_FAILURE );
   }
 
-  print_preamble( format, width, height, &p );
-
-  double x_delta = ( p.x_max - p.x_min ) / width;
-  double y_delta = ( p.y_max - p.y_min ) / height;
-  double bailout = p.bailout;
-  int   max_iter = p.max_iter;
-
-  double b = p.y_max;
-
-  for( int j = 0; j < height; ++j, b -= y_delta ) {
-
-    double a = p.x_min;
-
-    for( int i = 0; i < width; ++i, a += x_delta ) {
-
-      int iter = 0;
-      double x = 0.0, y = 0.0;
-
-      while( ++iter < max_iter ) {
-
-	double w  = x + y;
-	double ww = w * w;
-        double xx = x * x;
-        double yy = y * y;
-	double zz = xx + yy;
-
-        if( zz > bailout ) break;
-
-        x = a + xx - yy;
-	y = b + ww - zz;
-      }
-
-      print_color( iter, max_iter );
-    }
-  }
+  backend_plain( format, width, height, &p );
 }
