@@ -123,6 +123,7 @@ void color_netpam( int iter, int max_iter ) {
 
 void (*print_preamble)( char *format, int width, int height, struct params *p );
 void (*print_color)( int iter, int max_iter );
+void (*backend_p)( char *format, int width, int height, struct params *pp );
 
 void backend_plain( char *format, int width, int height, struct params *pp ) {
 
@@ -265,6 +266,7 @@ void backend_threads_naive( char *format, int width, int height, struct params *
 int main( int argc, char *argv[] ) {
 
   char format[10] = "P6";
+  char backend[20] = "plain";
   int width  = 1024;
   int height = 1024;
   struct params p;
@@ -276,6 +278,7 @@ int main( int argc, char *argv[] ) {
 
   static struct option long_options[] = {
     {  "format", required_argument, 0, 'f' },
+    { "Backend", required_argument, 0, 'B' },
     {   "width", required_argument, 0, 'w' },
     {  "height", required_argument, 0, 'h' },
     { "Maxiter", required_argument, 0, 'M' },
@@ -291,7 +294,7 @@ int main( int argc, char *argv[] ) {
 
   while( 1 ) {
 
-    int c = getopt_long( argc, argv, "f:M:b:w:h:m:n:x:X:y:Y:", long_options, NULL );
+    int c = getopt_long( argc, argv, "f:B:M:b:w:h:m:n:x:X:y:Y:", long_options, NULL );
 
     if( c < 0 ) break;
 
@@ -299,6 +302,10 @@ int main( int argc, char *argv[] ) {
 
     case 'f':
       sscanf( optarg, "%9s", format );
+      break;
+
+    case 'B':
+      sscanf( optarg, "%19s", backend );
       break;
 
     case 'w':
@@ -396,5 +403,26 @@ int main( int argc, char *argv[] ) {
     exit( EXIT_FAILURE );
   }
 
-  backend_threads_naive( format, width, height, &p );
+  int arg_flag = 0;
+  fn = strlen( backend );
+
+  if( fn == 5 ) {
+    if( 0 == strncmp( "plain", backend, fn ) ) {
+      backend_p = &backend_plain;
+      ++arg_flag;
+    }
+  }
+  if( fn == 13 ) {
+    if( 0 == strncmp( "threads_naive", backend, fn ) ) {
+      backend_p = &backend_threads_naive;
+      ++arg_flag;
+    }
+  }
+
+  if( arg_flag == 0 ) {
+    fprintf( stderr, "ERROR: specified backend \"%s\" is not recognized/supported\n", backend );
+    exit( EXIT_FAILURE );
+  }
+
+  backend_p( format, width, height, &p );
 }
