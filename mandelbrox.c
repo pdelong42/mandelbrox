@@ -123,9 +123,9 @@ void color_netpam( int iter, int max_iter ) {
 
 void (*print_preamble)( char *format, int width, int height, struct params *p );
 void (*print_color)( int iter, int max_iter );
-void (*backend_p)( char *format, int width, int height, struct params *pp );
+void (*backend_p)( char *format, int width, int height, struct params *pp, int threads );
 
-void backend_plain( char *format, int width, int height, struct params *pp ) {
+void backend_plain( char *format, int width, int height, struct params *pp, int threads ) {
 
   print_preamble( format, width, height, pp );
 
@@ -207,7 +207,7 @@ static void *thread_test_loop( void *arg ) {
 // efficient thing in terms of overhead (I constantly create new
 // threads and then join them without ever reusing them).
 
-void backend_threads_naive( char *format, int width, int height, struct params *pp ) {
+void backend_threads_naive( char *format, int width, int height, struct params *pp, int threads ) {
 
   int q_size = 4; // this is hard-coded for now, until I get around to parameterizing it
   int q_used = 0; // number of queue slots in use
@@ -265,6 +265,7 @@ void backend_threads_naive( char *format, int width, int height, struct params *
 
 int main( int argc, char *argv[] ) {
 
+  int threads = 1;
   char format[10] = "P6";
   char backend[20] = "plain";
   int width  = 1024;
@@ -289,12 +290,13 @@ int main( int argc, char *argv[] ) {
     {    "Xmax", required_argument, 0, 'X' },
     {    "ymin", required_argument, 0, 'y' },
     {    "Ymax", required_argument, 0, 'Y' },
+    { "threads", required_argument, 0, 't' },
     {         0,                 0, 0,  0  }
   };
 
   while( 1 ) {
 
-    int c = getopt_long( argc, argv, "f:B:M:b:w:h:m:n:x:X:y:Y:", long_options, NULL );
+    int c = getopt_long( argc, argv, "f:B:M:b:w:h:m:n:x:X:y:Y:t:", long_options, NULL );
 
     if( c < 0 ) break;
 
@@ -346,6 +348,10 @@ int main( int argc, char *argv[] ) {
 
     case 'n':
       sscanf( optarg, "%9d", &nu );
+      break;
+
+    case 't':
+      sscanf( optarg, "%9d", &threads );
       break;
 
     case '?':
@@ -424,5 +430,5 @@ int main( int argc, char *argv[] ) {
     exit( EXIT_FAILURE );
   }
 
-  backend_p( format, width, height, &p );
+  backend_p( format, width, height, &p, threads );
 }
