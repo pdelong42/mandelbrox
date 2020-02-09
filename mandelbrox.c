@@ -1,8 +1,14 @@
 #include <math.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <getopt.h>
+#include <pthread.h>
+
+// I lifted this directly from the PTHREAD_CREATE(3) manpage
+#define handle_error_en(en, msg) \
+   do { errno = en; perror( msg ); exit( EXIT_FAILURE ); } while (0)
 
 int c_max = (1<<8) - 1;
 
@@ -115,9 +121,153 @@ void color_netpam( int iter, int max_iter ) {
   printf( "%c%c%c", (char)c.red, (char)c.green, (char)c.blue );
 }
 
+void (*print_preamble)( char *format, int width, int height, struct params *p );
+void (*print_color)( int iter, int max_iter );
+void (*backend_p)( char *format, int width, int height, struct params *pp, int threads );
+
+void backend_plain( char *format, int width, int height, struct params *pp, int threads ) {
+
+  print_preamble( format, width, height, pp );
+
+  double x_delta = ( pp->x_max - pp->x_min ) / width;
+  double y_delta = ( pp->y_max - pp->y_min ) / height;
+  double bailout = pp->bailout;
+  int   max_iter = pp->max_iter;
+
+  double b = pp->y_max;
+
+  for( int j = 0; j < height; ++j, b -= y_delta ) {
+
+    double a = pp->x_min;
+
+    for( int i = 0; i < width; ++i, a += x_delta ) {
+
+      int iter = 0;
+      double x = 0.0, y = 0.0;
+
+      while( ++iter < max_iter ) {
+
+        double w  = x + y;
+        double ww = w * w;
+        double xx = x * x;
+        double yy = y * y;
+        double zz = xx + yy;
+
+        if( zz > bailout ) break;
+
+        x = a + xx - yy;
+        y = b + ww - zz;
+      }
+
+      print_color( iter, max_iter );
+    }
+  }
+}
+
+struct thread_info {
+  float a;
+  float b;
+  int iter;
+  int max_iter;
+  double bailout;
+  pthread_t thread;
+};
+
+static void *thread_test_loop( void *arg ) {
+
+  int iter = 0;
+  double x = 0.0, y = 0.0;
+
+  struct thread_info *item = arg;
+
+  double a = item->a;
+  double b = item->b;
+  int max_iter = item->max_iter;
+  double bailout  = item->bailout;
+
+  while( ++iter < max_iter ) {
+
+    double w  = x + y;
+    double ww = w * w;
+    double xx = x * x;
+    double yy = y * y;
+    double zz = xx + yy;
+
+    if( zz > bailout ) break;
+
+    x = a + xx - yy;
+    y = b + ww - zz;
+  }
+  item->iter = iter;
+}
+
+// I actually managed to create a threaded implementation that is
+// slower than the single-threaded version.  Yay me.  I did the
+// easiest thing I could think of, and it was probably not the most
+// efficient thing in terms of overhead (I constantly create new
+// threads and then join them without ever reusing them).
+
+void backend_threads_naive( char *format, int width, int height, struct params *pp, int threads ) {
+
+  int q_size = 4; // this is hard-coded for now, until I get around to parameterizing it
+  int q_used = 0; // number of queue slots in use
+  int q_next = 0; // next queue slot to use
+
+  struct thread_info *thread_queue = ( struct thread_info * )malloc( q_size * sizeof( struct thread_info ) );
+
+  if( thread_queue == NULL ) {
+    fprintf( stderr, "unable to allocate array of thread data - aborting\n" );
+    exit( EXIT_FAILURE );
+  }
+
+  print_preamble( format, width, height, pp );
+
+  double x_delta = ( pp->x_max - pp->x_min ) / width;
+  double y_delta = ( pp->y_max - pp->y_min ) / height;
+  double bailout = pp->bailout;
+  int   max_iter = pp->max_iter;
+
+  double b = pp->y_max;
+
+  for( int j = 0; j < height; ++j, b -= y_delta ) {
+
+    double a = pp->x_min;
+
+    for( int i = 0; i < width; ++i, a += x_delta ) {
+
+      if( q_used == q_size ) {
+
+        int s = pthread_join( thread_queue[ q_next ].thread, NULL );
+        if( s != 0 ) handle_error_en( s, "pthread_join" );
+
+	--q_used;
+	// TODO: check to ensure never less than zero
+
+        print_color( thread_queue[ q_next ].iter, max_iter );
+      }
+
+      thread_queue[ q_next ].a = a;
+      thread_queue[ q_next ].b = b;
+      thread_queue[ q_next ].bailout  = bailout;
+      thread_queue[ q_next ].max_iter = max_iter;
+
+      int s = pthread_create( &thread_queue[ q_next ].thread, NULL, &thread_test_loop, &thread_queue[ q_next ] );
+      if( s != 0 ) handle_error_en( s, "pthread_create" );
+
+      ++q_used;
+      // TODO: check to ensure never greater than q_size
+
+      ++q_next;
+      q_next %= q_size;
+    }
+  }
+}
+
 int main( int argc, char *argv[] ) {
 
+  int threads = 1;
   char format[10] = "P6";
+  char backend[20] = "plain";
   int width  = 1024;
   int height = 1024;
   struct params p;
@@ -129,6 +279,7 @@ int main( int argc, char *argv[] ) {
 
   static struct option long_options[] = {
     {  "format", required_argument, 0, 'f' },
+    { "Backend", required_argument, 0, 'B' },
     {   "width", required_argument, 0, 'w' },
     {  "height", required_argument, 0, 'h' },
     { "Maxiter", required_argument, 0, 'M' },
@@ -139,12 +290,13 @@ int main( int argc, char *argv[] ) {
     {    "Xmax", required_argument, 0, 'X' },
     {    "ymin", required_argument, 0, 'y' },
     {    "Ymax", required_argument, 0, 'Y' },
+    { "threads", required_argument, 0, 't' },
     {         0,                 0, 0,  0  }
   };
 
   while( 1 ) {
 
-    int c = getopt_long( argc, argv, "f:M:b:w:h:m:n:x:X:y:Y:", long_options, NULL );
+    int c = getopt_long( argc, argv, "f:B:M:b:w:h:m:n:x:X:y:Y:t:", long_options, NULL );
 
     if( c < 0 ) break;
 
@@ -152,6 +304,10 @@ int main( int argc, char *argv[] ) {
 
     case 'f':
       sscanf( optarg, "%9s", format );
+      break;
+
+    case 'B':
+      sscanf( optarg, "%19s", backend );
       break;
 
     case 'w':
@@ -194,6 +350,10 @@ int main( int argc, char *argv[] ) {
       sscanf( optarg, "%9d", &nu );
       break;
 
+    case 't':
+      sscanf( optarg, "%9d", &threads );
+      break;
+
     case '?':
       break;
 
@@ -215,8 +375,6 @@ int main( int argc, char *argv[] ) {
 
   int fmt_flag = 0;
   size_t fn = strlen( format );
-  void (*print_preamble)( char *format, int width, int height, struct params *p );
-  void (*print_color)( int iter, int max_iter );
 
   if( fn == 2 ) {
     if( 0 == strncmp( "P1", format, fn ) ) {
@@ -251,39 +409,26 @@ int main( int argc, char *argv[] ) {
     exit( EXIT_FAILURE );
   }
 
-  print_preamble( format, width, height, &p );
+  int arg_flag = 0;
+  fn = strlen( backend );
 
-  double x_delta = ( p.x_max - p.x_min ) / width;
-  double y_delta = ( p.y_max - p.y_min ) / height;
-  double bailout = p.bailout;
-  int   max_iter = p.max_iter;
-
-  double b = p.y_max;
-
-  for( int j = 0; j < height; ++j, b -= y_delta ) {
-
-    double a = p.x_min;
-
-    for( int i = 0; i < width; ++i, a += x_delta ) {
-
-      int iter = 0;
-      double x = 0.0, y = 0.0;
-
-      while( ++iter < max_iter ) {
-
-	double w  = x + y;
-	double ww = w * w;
-        double xx = x * x;
-        double yy = y * y;
-	double zz = xx + yy;
-
-        if( zz > bailout ) break;
-
-        x = a + xx - yy;
-	y = b + ww - zz;
-      }
-
-      print_color( iter, max_iter );
+  if( fn == 5 ) {
+    if( 0 == strncmp( "plain", backend, fn ) ) {
+      backend_p = &backend_plain;
+      ++arg_flag;
     }
   }
+  if( fn == 13 ) {
+    if( 0 == strncmp( "threads_naive", backend, fn ) ) {
+      backend_p = &backend_threads_naive;
+      ++arg_flag;
+    }
+  }
+
+  if( arg_flag == 0 ) {
+    fprintf( stderr, "ERROR: specified backend \"%s\" is not recognized/supported\n", backend );
+    exit( EXIT_FAILURE );
+  }
+
+  backend_p( format, width, height, &p, threads );
 }
