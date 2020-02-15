@@ -164,21 +164,21 @@ void backend_plain( char *format, int width, int height, struct params *pp, int 
   }
 }
 
-struct thread_info {
+typedef struct thread_info {
   float a;
   float b;
   int iter;
   int max_iter;
   double bailout;
   pthread_t thread;
-};
+} thread_info_t, *thread_info_p;
 
 static void *thread_test_loop( void *arg ) {
 
   int iter = 0;
   double x = 0.0, y = 0.0;
 
-  struct thread_info *item = arg;
+  thread_info_p item = arg;
 
   double a = item->a;
   double b = item->b;
@@ -213,7 +213,7 @@ void backend_threads_naive( char *format, int width, int height, struct params *
   int q_used = 0; // number of queue slots in use
   int q_next = 0; // next queue slot to use
 
-  struct thread_info *thread_queue = ( struct thread_info * )malloc( q_size * sizeof( struct thread_info ) );
+  thread_info_p thread_queue = ( thread_info_p )malloc( q_size * sizeof( thread_info_t ) );
 
   if( thread_queue == NULL ) {
     fprintf( stderr, "unable to allocate array of thread data - aborting\n" );
@@ -227,6 +227,8 @@ void backend_threads_naive( char *format, int width, int height, struct params *
   double bailout = pp->bailout;
   int   max_iter = pp->max_iter;
 
+  thread_info_p tip = &(thread_queue[ q_next ]);
+
   double b = pp->y_max;
 
   for( int j = 0; j < height; ++j, b -= y_delta ) {
@@ -237,21 +239,21 @@ void backend_threads_naive( char *format, int width, int height, struct params *
 
       if( q_used == q_size ) {
 
-        int s = pthread_join( thread_queue[ q_next ].thread, NULL );
+        int s = pthread_join( tip->thread, NULL );
         if( s != 0 ) handle_error_en( s, "pthread_join" );
 
 	--q_used;
 	// TODO: check to ensure never less than zero
 
-        print_color( thread_queue[ q_next ].iter, max_iter );
+        print_color( tip->iter, max_iter );
       }
 
-      thread_queue[ q_next ].a = a;
-      thread_queue[ q_next ].b = b;
-      thread_queue[ q_next ].bailout  = bailout;
-      thread_queue[ q_next ].max_iter = max_iter;
+      tip->a = a;
+      tip->b = b;
+      tip->bailout  = bailout;
+      tip->max_iter = max_iter;
 
-      int s = pthread_create( &thread_queue[ q_next ].thread, NULL, &thread_test_loop, &thread_queue[ q_next ] );
+      int s = pthread_create( &(tip->thread), NULL, &thread_test_loop, tip );
       if( s != 0 ) handle_error_en( s, "pthread_create" );
 
       ++q_used;
