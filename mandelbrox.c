@@ -125,6 +125,43 @@ void (*print_preamble)( char *format, int width, int height, struct params *p );
 void (*print_color)( int iter, int max_iter );
 void (*backend_p)( char *format, int width, int height, struct params *pp, int threads );
 
+typedef struct thread_info {
+  float a;
+  float b;
+  int iter;
+  int max_iter;
+  double bailout;
+  pthread_t thread;
+} thread_info_t, *thread_info_p;
+
+static void *thread_test_loop( void *arg ) {
+
+  thread_info_p item = arg;
+
+  double a = item->a;
+  double b = item->b;
+  double bailout  = item->bailout;
+  int max_iter = item->max_iter;
+
+  int iter = 0;
+  double x = 0.0, y = 0.0;
+
+  while( ++iter < max_iter ) {
+
+    double w  = x + y;
+    double ww = w * w;
+    double xx = x * x;
+    double yy = y * y;
+    double zz = xx + yy;
+
+    if( zz > bailout ) break;
+
+    x = a + xx - yy;
+    y = b + ww - zz;
+  }
+  item->iter = iter;
+}
+
 void backend_plain( char *format, int width, int height, struct params *pp, int threads ) {
 
   print_preamble( format, width, height, pp );
@@ -142,63 +179,18 @@ void backend_plain( char *format, int width, int height, struct params *pp, int 
 
     for( int i = 0; i < width; ++i, a += x_delta ) {
 
-      int iter = 0;
-      double x = 0.0, y = 0.0;
+      thread_info_t ti;
 
-      while( ++iter < max_iter ) {
+      ti.a = a;
+      ti.b = b;
+      ti.bailout  = bailout;
+      ti.max_iter = max_iter;
 
-        double w  = x + y;
-        double ww = w * w;
-        double xx = x * x;
-        double yy = y * y;
-        double zz = xx + yy;
+      thread_test_loop( &ti );
 
-        if( zz > bailout ) break;
-
-        x = a + xx - yy;
-        y = b + ww - zz;
-      }
-
-      print_color( iter, max_iter );
+      print_color( ti.iter, ti.max_iter );
     }
   }
-}
-
-typedef struct thread_info {
-  float a;
-  float b;
-  int iter;
-  int max_iter;
-  double bailout;
-  pthread_t thread;
-} thread_info_t, *thread_info_p;
-
-static void *thread_test_loop( void *arg ) {
-
-  int iter = 0;
-  double x = 0.0, y = 0.0;
-
-  thread_info_p item = arg;
-
-  double a = item->a;
-  double b = item->b;
-  int max_iter = item->max_iter;
-  double bailout  = item->bailout;
-
-  while( ++iter < max_iter ) {
-
-    double w  = x + y;
-    double ww = w * w;
-    double xx = x * x;
-    double yy = y * y;
-    double zz = xx + yy;
-
-    if( zz > bailout ) break;
-
-    x = a + xx - yy;
-    y = b + ww - zz;
-  }
-  item->iter = iter;
 }
 
 // I actually managed to create a threaded implementation that is
