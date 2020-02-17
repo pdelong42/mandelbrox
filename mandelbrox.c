@@ -123,20 +123,20 @@ void color_netpam( int iter, int max_iter ) {
 
 void (*print_preamble)( char *format, int width, int height, struct params *p );
 void (*print_color)( int iter, int max_iter );
-void (*backend_p)( char *format, int width, int height, struct params *pp, int threads );
+void (*backend)( char *format, int width, int height, struct params *pp, int threads );
 
-typedef struct thread_info {
+typedef struct work_unit {
   float a;
   float b;
   int iter;
   int max_iter;
   double bailout;
   pthread_t thread;
-} thread_info_t, *thread_info_p;
+} work_unit_t, *work_unit_p;
 
 static void *thread_test_loop( void *arg ) {
 
-  thread_info_p item = arg;
+  work_unit_p item = arg;
 
   double a = item->a;
   double b = item->b;
@@ -179,16 +179,16 @@ void backend_plain( char *format, int width, int height, struct params *pp, int 
 
     for( int i = 0; i < width; ++i, a += x_delta ) {
 
-      thread_info_t ti;
+      work_unit_t wu;
 
-      ti.a = a;
-      ti.b = b;
-      ti.bailout  = bailout;
-      ti.max_iter = max_iter;
+      wu.a = a;
+      wu.b = b;
+      wu.bailout  = bailout;
+      wu.max_iter = max_iter;
 
-      thread_test_loop( &ti );
+      thread_test_loop( &wu );
 
-      print_color( ti.iter, ti.max_iter );
+      print_color( wu.iter, wu.max_iter );
     }
   }
 }
@@ -205,12 +205,14 @@ void backend_threads_naive( char *format, int width, int height, struct params *
   int q_used = 0; // number of queue slots in use
   int q_next = 0; // next queue slot to use
 
-  thread_info_p thread_queue = ( thread_info_p )malloc( q_size * sizeof( thread_info_t ) );
+  work_unit_p work_queue = ( work_unit_p )malloc( q_size * sizeof( work_unit_t ) );
 
-  if( thread_queue == NULL ) {
+  if( work_queue == NULL ) {
     fprintf( stderr, "unable to allocate array of thread data - aborting\n" );
     exit( EXIT_FAILURE );
   }
+
+  work_unit_p wup = &(work_queue[ q_next ]);
 
   print_preamble( format, width, height, pp );
 
@@ -218,8 +220,6 @@ void backend_threads_naive( char *format, int width, int height, struct params *
   double y_delta = ( pp->y_max - pp->y_min ) / height;
   double bailout = pp->bailout;
   int   max_iter = pp->max_iter;
-
-  thread_info_p tip = &(thread_queue[ q_next ]);
 
   double b = pp->y_max;
 
@@ -231,21 +231,21 @@ void backend_threads_naive( char *format, int width, int height, struct params *
 
       if( q_used == q_size ) {
 
-        int s = pthread_join( tip->thread, NULL );
+        int s = pthread_join( wup->thread, NULL );
         if( s != 0 ) handle_error_en( s, "pthread_join" );
 
 	--q_used;
 	// TODO: check to ensure never less than zero
 
-        print_color( tip->iter, max_iter );
+        print_color( wup->iter, max_iter );
       }
 
-      tip->a = a;
-      tip->b = b;
-      tip->bailout  = bailout;
-      tip->max_iter = max_iter;
+      wup->a = a;
+      wup->b = b;
+      wup->bailout  = bailout;
+      wup->max_iter = max_iter;
 
-      int s = pthread_create( &(tip->thread), NULL, &thread_test_loop, tip );
+      int s = pthread_create( &(wup->thread), NULL, &thread_test_loop, wup );
       if( s != 0 ) handle_error_en( s, "pthread_create" );
 
       ++q_used;
@@ -261,7 +261,7 @@ int main( int argc, char *argv[] ) {
 
   int threads = 1;
   char format[10] = "P6";
-  char backend[20] = "plain";
+  char backend_name[20] = "plain";
   int width  = 1024;
   int height = 1024;
   struct params p;
@@ -301,7 +301,7 @@ int main( int argc, char *argv[] ) {
       break;
 
     case 'B':
-      sscanf( optarg, "%19s", backend );
+      sscanf( optarg, "%19s", backend_name );
       break;
 
     case 'w':
@@ -404,25 +404,25 @@ int main( int argc, char *argv[] ) {
   }
 
   int arg_flag = 0;
-  fn = strlen( backend );
+  fn = strlen( backend_name );
 
   if( fn == 5 ) {
-    if( 0 == strncmp( "plain", backend, fn ) ) {
-      backend_p = &backend_plain;
+    if( 0 == strncmp( "plain", backend_name, fn ) ) {
+      backend = &backend_plain;
       ++arg_flag;
     }
   }
   if( fn == 13 ) {
-    if( 0 == strncmp( "threads_naive", backend, fn ) ) {
-      backend_p = &backend_threads_naive;
+    if( 0 == strncmp( "threads_naive", backend_name, fn ) ) {
+      backend = &backend_threads_naive;
       ++arg_flag;
     }
   }
 
   if( arg_flag == 0 ) {
-    fprintf( stderr, "ERROR: specified backend \"%s\" is not recognized/supported\n", backend );
+    fprintf( stderr, "ERROR: specified backend \"%s\" is not recognized/supported\n", backend_name );
     exit( EXIT_FAILURE );
   }
 
-  backend_p( format, width, height, &p, threads );
+  backend( format, width, height, &p, threads );
 }
