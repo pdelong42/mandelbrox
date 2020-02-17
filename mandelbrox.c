@@ -201,7 +201,7 @@ void backend_plain( char *format, int width, int height, struct params *pp, int 
 
 void backend_threads_naive( char *format, int width, int height, struct params *pp, int threads ) {
 
-  int q_size = 4; // this is hard-coded for now, until I get around to parameterizing it
+  int q_size = threads; // this is hard-coded for now, until I get around to parameterizing it
   int q_used = 0; // number of queue slots in use
   int q_next = 0; // next queue slot to use
 
