@@ -6,5 +6,8 @@ mandelbrox: mandelbrox.c Makefile
 static: mandelbrox.c Makefile
 	cc -pthread -O3 -static -o mandelbrox-static mandelbrox.c -lm
 
+test:
+	@bash test.sh
+
 clean:
 	@rm -vf mandelbrox mandelbrox-static
