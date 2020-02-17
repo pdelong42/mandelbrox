@@ -17,53 +17,62 @@ int nu = 50;
 
 double sixth = M_PI / 3.0;
 
-struct color {
+typedef struct color {
   double red;
   double green;
   double blue;
-};
+} color_t, *color_p;
 
-struct params {
+typedef struct params {
   double x_min;
   double x_max;
   double y_min;
   double y_max;
   double bailout;
   int max_iter;
-};
+} params_t, *params_p;
 
-void preamble_common( char *format, int width, int height, struct params *p ) {
+typedef struct work_unit {
+  float a;
+  float b;
+  int iter;
+  int max_iter;
+  double bailout;
+  pthread_t thread;
+} work_unit_t, *work_unit_p;
+
+void preamble_common( char *format, int width, int height, params_p pp ) {
 
   printf( "%s\n", format );
-  printf( "# x_min = %f\n",    p->x_min );
-  printf( "# x_max = %f\n",    p->x_max );
-  printf( "# y_min = %f\n",    p->y_min );
-  printf( "# y_max = %f\n",    p->y_max );
-  printf( "# bailout = %f\n",  p->bailout );
-  printf( "# max_iter = %d\n", p->max_iter );
+  printf( "# x_min = %f\n",    pp->x_min );
+  printf( "# x_max = %f\n",    pp->x_max );
+  printf( "# y_min = %f\n",    pp->y_min );
+  printf( "# y_max = %f\n",    pp->y_max );
+  printf( "# bailout = %f\n",  pp->bailout );
+  printf( "# max_iter = %d\n", pp->max_iter );
 }
 
-void preamble_netpbm( char *format, int width, int height, struct params *p ) {
+void preamble_netpbm( char *format, int width, int height, params_p pp ) {
 
-  preamble_common( format, width, height, p );
+  preamble_common( format, width, height, pp );
   printf( "%d %d\n", width, height );
 }
 
-void preamble_netpgm( char *format, int width, int height, struct params *p ) {
+void preamble_netpgm( char *format, int width, int height, params_p pp ) {
 
-  preamble_netpbm( format, width, height, p );
+  preamble_netpbm( format, width, height, pp );
   printf( "%d\n", c_max );
 }
 
-void preamble_netppm( char *format, int width, int height, struct params *p ) {
+void preamble_netppm( char *format, int width, int height, params_p pp ) {
 
-  preamble_netpbm( format, width, height, p );
+  preamble_netpbm( format, width, height, pp );
   printf( "%d\n", c_max );
 }
 
-void preamble_netpam( char *format, int width, int height, struct params *p ) {
+void preamble_netpam( char *format, int width, int height, params_p pp ) {
 
-  preamble_common( format, width, height, p );
+  preamble_common( format, width, height, pp );
   printf( "WIDTH %d\nHEIGHT %d\nMAXVAL %d\n", width, height, c_max );
   printf( "TUPLTYPE RGB\nDEPTH 3\nENDHDR\n" );
 }
@@ -76,7 +85,7 @@ void color_netpgm( int iter, int max_iter ) {
   printf( "%d ", ( c_max * ( max_iter - iter ) ) / max_iter );
 }
 
-void color_picker( int iter, int max_iter, struct color *c ) {
+void color_picker( int iter, int max_iter, color_p c ) {
 
   if( iter >= max_iter ) {
     c->red = c->green = c->blue = 0;
@@ -107,7 +116,7 @@ void color_picker( int iter, int max_iter, struct color *c ) {
 
 void color_netppm( int iter, int max_iter ) {
 
-  struct color c;
+  color_t c;
 
   color_picker( iter, max_iter, &c );
   printf( "%d %d %d ", (int)c.red, (int)c.green, (int)c.blue );
@@ -115,24 +124,15 @@ void color_netppm( int iter, int max_iter ) {
 
 void color_netpam( int iter, int max_iter ) {
 
-  struct color c;
+  color_t c;
 
   color_picker( iter, max_iter, &c );
   printf( "%c%c%c", (char)c.red, (char)c.green, (char)c.blue );
 }
 
-void (*print_preamble)( char *format, int width, int height, struct params *p );
+void (*print_preamble)( char *format, int width, int height, params_p pp );
 void (*print_color)( int iter, int max_iter );
-void (*backend)( char *format, int width, int height, struct params *pp, int threads );
-
-typedef struct work_unit {
-  float a;
-  float b;
-  int iter;
-  int max_iter;
-  double bailout;
-  pthread_t thread;
-} work_unit_t, *work_unit_p;
+void (*backend)( char *format, int width, int height, params_p pp, int threads );
 
 static void *thread_test_loop( void *arg ) {
 
@@ -162,7 +162,7 @@ static void *thread_test_loop( void *arg ) {
   item->iter = iter;
 }
 
-void backend_plain( char *format, int width, int height, struct params *pp, int threads ) {
+void backend_plain( char *format, int width, int height, params_p pp, int threads ) {
 
   print_preamble( format, width, height, pp );
 
@@ -199,7 +199,7 @@ void backend_plain( char *format, int width, int height, struct params *pp, int 
 // efficient thing in terms of overhead (I constantly create new
 // threads and then join them without ever reusing them).
 
-void backend_threads_naive( char *format, int width, int height, struct params *pp, int threads ) {
+void backend_threads_naive( char *format, int width, int height, params_p pp, int threads ) {
 
   int q_size = threads; // this is hard-coded for now, until I get around to parameterizing it
   int q_used = 0; // number of queue slots in use
@@ -264,7 +264,7 @@ int main( int argc, char *argv[] ) {
   char backend_name[20] = "plain";
   int width  = 1024;
   int height = 1024;
-  struct params p;
+  params_t p;
 
   p.max_iter = 1000;
   p.bailout = 4.0;
