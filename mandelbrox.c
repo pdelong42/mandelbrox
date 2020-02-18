@@ -134,7 +134,7 @@ void (*print_preamble)( char *format, int width, int height, params_p pp );
 void (*print_color)( int iter, int max_iter );
 void (*backend)( char *format, int width, int height, params_p pp, int threads );
 
-static void *thread_test_loop( void *arg ) {
+static void *worker_loop( void *arg ) {
 
   work_unit_p item = arg;
 
@@ -186,7 +186,7 @@ void backend_plain( char *format, int width, int height, params_p pp, int thread
       wu.bailout  = bailout;
       wu.max_iter = max_iter;
 
-      thread_test_loop( &wu );
+      worker_loop( &wu );
 
       print_color( wu.iter, wu.max_iter );
     }
@@ -208,7 +208,7 @@ void backend_threads_naive( char *format, int width, int height, params_p pp, in
   work_unit_p work_queue = ( work_unit_p )malloc( q_size * sizeof( work_unit_t ) );
 
   if( work_queue == NULL ) {
-    fprintf( stderr, "unable to allocate array of thread data - aborting\n" );
+    fprintf( stderr, "unable to allocate array of worker data - aborting\n" );
     exit( EXIT_FAILURE );
   }
 
@@ -245,7 +245,7 @@ void backend_threads_naive( char *format, int width, int height, params_p pp, in
       wup->bailout  = bailout;
       wup->max_iter = max_iter;
 
-      int s = pthread_create( &(wup->thread), NULL, &thread_test_loop, wup );
+      int s = pthread_create( &(wup->thread), NULL, &worker_loop, wup );
       if( s != 0 ) handle_error_en( s, "pthread_create" );
 
       ++q_used;
