@@ -39,6 +39,7 @@ typedef struct work_unit {
   int max_iter;
   double bailout;
   pthread_t thread;
+  pthread_mutex_t mutex;
 } work_unit_t, *work_unit_p;
 
 void preamble_common( char *format, int width, int height, params_p pp ) {
@@ -134,7 +135,7 @@ void (*print_preamble)( char *format, int width, int height, params_p pp );
 void (*print_color)( int iter, int max_iter );
 void (*backend)( char *format, int width, int height, params_p pp, int threads );
 
-static void *worker_loop( void *arg ) {
+static void *worker_test( void *arg ) {
 
   work_unit_p item = arg;
 
@@ -162,6 +163,24 @@ static void *worker_loop( void *arg ) {
   item->iter = iter;
 }
 
+static void *worker_loop( void *arg ) {
+
+  work_unit_p item = arg;
+
+  while( 1 ) {
+
+    int status = 0;
+
+    status = pthread_mutex_lock( &(item->mutex) );
+    if( status != 0 ) handle_error_en( status, "pthread_mutex_lock" );
+
+    worker_test( item );
+
+    status = pthread_mutex_unlock( &(item->mutex) );
+    if( status != 0 ) handle_error_en( status, "pthread_mutex_unlock" );
+  }
+}
+
 void backend_plain( char *format, int width, int height, params_p pp, int threads ) {
 
   print_preamble( format, width, height, pp );
@@ -186,7 +205,7 @@ void backend_plain( char *format, int width, int height, params_p pp, int thread
       wu.bailout  = bailout;
       wu.max_iter = max_iter;
 
-      worker_loop( &wu );
+      worker_test( &wu );
 
       print_color( wu.iter, wu.max_iter );
     }
@@ -245,8 +264,80 @@ void backend_threads_naive( char *format, int width, int height, params_p pp, in
       wup->bailout  = bailout;
       wup->max_iter = max_iter;
 
-      int s = pthread_create( &(wup->thread), NULL, &worker_loop, wup );
+      int s = pthread_create( &(wup->thread), NULL, &worker_test, wup );
       if( s != 0 ) handle_error_en( s, "pthread_create" );
+
+      ++q_used;
+      // TODO: check to ensure never greater than q_size
+
+      ++q_next;
+      q_next %= q_size;
+
+      wup = &(work_queue[ q_next ]);
+    }
+  }
+}
+
+void backend_threads_better( char *format, int width, int height, params_p pp, int threads ) {
+
+  int q_size = threads; // this is hard-coded for now, until I get around to parameterizing it
+  int q_used = 0; // number of queue slots in use
+  int q_next = 0; // next queue slot to use
+
+  work_unit_p work_queue = ( work_unit_p )malloc( q_size * sizeof( work_unit_t ) );
+
+  if( work_queue == NULL ) {
+    fprintf( stderr, "unable to allocate array of worker data - aborting\n" );
+    exit( EXIT_FAILURE );
+  }
+
+  for( int i = 0; i < q_size; ++i ) {
+
+    int status = 0;
+    work_unit_t wu = work_queue[i];
+
+    status = pthread_create( &(wu.thread), NULL, &worker_loop, NULL );
+    if( status != 0 ) handle_error_en( status, "pthread_create" );
+
+    status = pthread_mutex_init( &(wu.mutex), NULL );
+    if( status != 0 ) handle_error_en( status, "pthread_mutex_init" );
+  }
+
+  work_unit_p wup = work_queue;
+
+  print_preamble( format, width, height, pp );
+
+  double x_delta = ( pp->x_max - pp->x_min ) / width;
+  double y_delta = ( pp->y_max - pp->y_min ) / height;
+  double bailout = pp->bailout;
+  int   max_iter = pp->max_iter;
+
+  double b = pp->y_max;
+
+  for( int j = 0; j < height; ++j, b -= y_delta ) {
+
+    double a = pp->x_min;
+
+    for( int i = 0; i < width; ++i, a += x_delta ) {
+
+      if( q_used == q_size ) {
+
+        int status = pthread_join( wup->thread, NULL );
+        if( status != 0 ) handle_error_en( status, "pthread_join" );
+
+	--q_used;
+	// TODO: check to ensure never less than zero
+
+        print_color( wup->iter, max_iter );
+      }
+
+      wup->a = a;
+      wup->b = b;
+      wup->bailout  = bailout;
+      wup->max_iter = max_iter;
+
+      //      int status = pthread_create( &(wup->thread), NULL, &worker_loop, wup );
+      //      if( s != 0 ) handle_error_en( s, "pthread_create" );
 
       ++q_used;
       // TODO: check to ensure never greater than q_size
