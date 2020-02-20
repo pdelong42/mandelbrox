@@ -212,7 +212,7 @@ void backend_threads_naive( char *format, int width, int height, params_p pp, in
     exit( EXIT_FAILURE );
   }
 
-  work_unit_p wup = &(work_queue[ q_next ]);
+  work_unit_p wup = work_queue;
 
   print_preamble( format, width, height, pp );
 
