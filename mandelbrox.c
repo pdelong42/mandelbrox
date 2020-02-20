@@ -253,6 +253,8 @@ void backend_threads_naive( char *format, int width, int height, params_p pp, in
 
       ++q_next;
       q_next %= q_size;
+
+      wup = &(work_queue[ q_next ]);
     }
   }
 }
