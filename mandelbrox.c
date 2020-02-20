@@ -33,12 +33,13 @@ typedef struct params {
 } params_t, *params_p;
 
 typedef struct work_unit {
-  float a;
-  float b;
+  double a;
+  double b;
   int iter;
   int max_iter;
   double bailout;
   pthread_t thread;
+  pthread_mutex_t mutex;
 } work_unit_t, *work_unit_p;
 
 void preamble_common( char *format, int width, int height, params_p pp ) {
