@@ -40,6 +40,8 @@ typedef struct work_unit {
   double bailout;
   pthread_t thread;
   pthread_mutex_t mutex;
+  //pthread_cond_t start;
+  //pthread_cond_t finish;
 } work_unit_t, *work_unit_p;
 
 void preamble_common( char *format, int width, int height, params_p pp ) {
@@ -163,6 +165,37 @@ static void *worker_loop( void *arg ) {
   item->iter = iter;
 }
 
+static void *worker_wrapper( void *arg ) {
+
+  work_unit_p wup = (work_unit_p)arg;
+  int s;
+
+  while( 1 ) {
+
+    s = pthread_mutex_lock( &(wup->mutex) );
+    if( s != 0 ) handle_error_en( s, "pthread_mutex_lock" );
+
+    //s = pthread_cond_wait( &(wup->start), &(wup->mutex) );
+    //if( s != 0 ) handle_error_en( s, "pthread_cond_wait" );
+
+    s = pthread_mutex_unlock( &(wup->mutex) );
+    if( s != 0 ) handle_error_en( s, "pthread_mutex_lock" );
+
+    worker_loop( arg );
+
+    s = pthread_mutex_lock( &(wup->mutex) );
+    if( s != 0 ) handle_error_en( s, "pthread_mutex_lock" );
+
+    //fprintf( stderr, "DEBUG: pthread_cond_signal( ...finish... )\n" );
+
+    //s = pthread_cond_signal( &(wup->finish) );
+    //if( s != 0 ) handle_error_en( s, "pthread_cond_signal" );
+
+    s = pthread_mutex_unlock( &(wup->mutex) );
+    if( s != 0 ) handle_error_en( s, "pthread_mutex_lock" );
+  }
+}
+
 void backend_plain( char *format, int width, int height, params_p pp, int threads ) {
 
   print_preamble( format, width, height, pp );
@@ -248,6 +281,99 @@ void backend_threads_naive( char *format, int width, int height, params_p pp, in
 
       int s = pthread_create( &(wup->thread), NULL, &worker_loop, wup );
       if( s != 0 ) handle_error_en( s, "pthread_create" );
+
+      ++q_used;
+      // TODO: check to ensure never greater than q_size
+
+      ++q_next;
+      q_next %= q_size;
+
+      wup = &(work_queue[ q_next ]);
+    }
+  }
+}
+
+void backend_threads_simple( char *format, int width, int height, params_p pp, int threads ) {
+
+  int q_size = threads; // this is hard-coded for now, until I get around to parameterizing it
+  int q_used = 0; // number of queue slots in use
+  int q_next = 0; // next queue slot to use
+
+  work_unit_p work_queue = ( work_unit_p )malloc( q_size * sizeof( work_unit_t ) );
+
+  if( work_queue == NULL ) {
+    fprintf( stderr, "unable to allocate array of worker data - aborting\n" );
+    exit( EXIT_FAILURE );
+  }
+
+  for( int t = 0; t < q_size; ++t ) {
+
+    int s;
+    work_unit_p wup = &(work_queue[t]);
+
+    s = pthread_create( &(wup->thread), NULL, &worker_wrapper, (void *)wup );
+    if( s != 0 ) handle_error_en( s, "pthread_create" );
+
+    s = pthread_mutex_init( &(wup->mutex), NULL );
+    if( s != 0 ) handle_error_en( s, "pthread_mutex_init" );
+
+    //s = pthread_cond_init( &(wup->start), NULL );
+    //if( s != 0 ) handle_error_en( s, "pthread_cond_init" );
+
+    //s = pthread_cond_init( &(wup->finish), NULL );
+    //if( s != 0 ) handle_error_en( s, "pthread_cond_init" );
+  }
+
+  work_unit_p wup = work_queue;
+
+  print_preamble( format, width, height, pp );
+
+  double x_delta = ( pp->x_max - pp->x_min ) / width;
+  double y_delta = ( pp->y_max - pp->y_min ) / height;
+  double bailout = pp->bailout;
+  int   max_iter = pp->max_iter;
+
+  double b = pp->y_max;
+
+  for( int j = 0; j < height; ++j, b -= y_delta ) {
+
+    double a = pp->x_min;
+
+    for( int i = 0; i < width; ++i, a += x_delta ) {
+
+      //fprintf( stderr, "DEBUG: q_next = %d\n", q_next );
+
+      int s;
+
+      if( q_used == q_size ) {
+
+        s = pthread_mutex_lock( &(wup->mutex) );
+        if( s != 0 ) handle_error_en( s, "pthread_mutex_lock" );
+
+        //s = pthread_cond_wait( &(wup->finish), &(wup->mutex) );
+        //if( s != 0 ) handle_error_en( s, "pthread_cond_wait" );
+
+        print_color( wup->iter, max_iter );
+
+        s = pthread_mutex_unlock( &(wup->mutex) );
+        if( s != 0 ) handle_error_en( s, "pthread_mutex_unlock" );
+
+	--q_used;
+      }
+
+      s = pthread_mutex_lock( &(wup->mutex) );
+      if( s != 0 ) handle_error_en( s, "pthread_mutex_lock" );
+
+      wup->a = a;
+      wup->b = b;
+      wup->bailout  = bailout;
+      wup->max_iter = max_iter;
+
+      //s = pthread_cond_signal( &(wup->start) );
+      //if( s != 0 ) handle_error_en( s, "pthread_cond_signal" );
+
+      s = pthread_mutex_unlock( &(wup->mutex) );
+      if( s != 0 ) handle_error_en( s, "pthread_mutex_unlock" );
 
       ++q_used;
       // TODO: check to ensure never greater than q_size
@@ -418,6 +544,12 @@ int main( int argc, char *argv[] ) {
   if( fn == 13 ) {
     if( 0 == strncmp( "threads_naive", backend_name, fn ) ) {
       backend = &backend_threads_naive;
+      ++arg_flag;
+    }
+  }
+  if( fn == 14 ) {
+    if( 0 == strncmp( "threads_simple", backend_name, fn ) ) {
+      backend = &backend_threads_simple;
       ++arg_flag;
     }
   }
