@@ -40,8 +40,8 @@ typedef struct work_unit {
   double bailout;
   pthread_t thread;
   pthread_mutex_t mutex;
-  //pthread_cond_t start;
-  //pthread_cond_t finish;
+  pthread_cond_t start;
+  pthread_cond_t finish;
 } work_unit_t, *work_unit_p;
 
 void preamble_common( char *format, int width, int height, params_p pp ) {
@@ -168,31 +168,27 @@ static void *worker_loop( void *arg ) {
 static void *worker_wrapper( void *arg ) {
 
   work_unit_p wup = (work_unit_p)arg;
-  int s;
+
+  int s = pthread_mutex_lock( &(wup->mutex) );
+  if( s != 0 ) handle_error_en( s, "pthread_mutex_lock" );
 
   while( 1 ) {
 
-    s = pthread_mutex_lock( &(wup->mutex) );
-    if( s != 0 ) handle_error_en( s, "pthread_mutex_lock" );
+    fprintf( stderr, "DEBUG: thread %p waiting to receive start signal from main thread\n", &(wup->thread) );
 
-    //s = pthread_cond_wait( &(wup->start), &(wup->mutex) );
-    //if( s != 0 ) handle_error_en( s, "pthread_cond_wait" );
+    s = pthread_cond_wait( &(wup->start), &(wup->mutex) );
+    if( s != 0 ) handle_error_en( s, "pthread_cond_wait" );
 
-    s = pthread_mutex_unlock( &(wup->mutex) );
-    if( s != 0 ) handle_error_en( s, "pthread_mutex_lock" );
+    fprintf( stderr, "DEBUG: thread %p received start signal from main thread\n", &(wup->thread) );
 
     worker_loop( arg );
 
-    s = pthread_mutex_lock( &(wup->mutex) );
-    if( s != 0 ) handle_error_en( s, "pthread_mutex_lock" );
+    fprintf( stderr, "DEBUG: thread %p preparing to send finish signal to main thread\n", &(wup->thread) );
 
-    //fprintf( stderr, "DEBUG: pthread_cond_signal( ...finish... )\n" );
+    s = pthread_cond_signal( &(wup->finish) );
+    if( s != 0 ) handle_error_en( s, "pthread_cond_signal" );
 
-    //s = pthread_cond_signal( &(wup->finish) );
-    //if( s != 0 ) handle_error_en( s, "pthread_cond_signal" );
-
-    s = pthread_mutex_unlock( &(wup->mutex) );
-    if( s != 0 ) handle_error_en( s, "pthread_mutex_lock" );
+    fprintf( stderr, "DEBUG: thread %p sent finish signal to main thread\n", &(wup->thread) );
   }
 }
 
@@ -317,11 +313,11 @@ void backend_threads_simple( char *format, int width, int height, params_p pp, i
     s = pthread_mutex_init( &(wup->mutex), NULL );
     if( s != 0 ) handle_error_en( s, "pthread_mutex_init" );
 
-    //s = pthread_cond_init( &(wup->start), NULL );
-    //if( s != 0 ) handle_error_en( s, "pthread_cond_init" );
+    s = pthread_cond_init( &(wup->start), NULL );
+    if( s != 0 ) handle_error_en( s, "pthread_cond_init" );
 
-    //s = pthread_cond_init( &(wup->finish), NULL );
-    //if( s != 0 ) handle_error_en( s, "pthread_cond_init" );
+    s = pthread_cond_init( &(wup->finish), NULL );
+    if( s != 0 ) handle_error_en( s, "pthread_cond_init" );
   }
 
   work_unit_p wup = work_queue;
@@ -341,36 +337,34 @@ void backend_threads_simple( char *format, int width, int height, params_p pp, i
 
     for( int i = 0; i < width; ++i, a += x_delta ) {
 
-      //fprintf( stderr, "DEBUG: q_next = %d\n", q_next );
-
-      int s;
+      int s = pthread_mutex_lock( &(wup->mutex) );
+      if( s != 0 ) handle_error_en( s, "pthread_mutex_lock" );
 
       if( q_used == q_size ) {
 
-        s = pthread_mutex_lock( &(wup->mutex) );
-        if( s != 0 ) handle_error_en( s, "pthread_mutex_lock" );
+        fprintf( stderr, "DEBUG: main thread preparing to wait for finish signal from thread %p\n", &(wup->thread) );
 
-        //s = pthread_cond_wait( &(wup->finish), &(wup->mutex) );
-        //if( s != 0 ) handle_error_en( s, "pthread_cond_wait" );
+        s = pthread_cond_wait( &(wup->finish), &(wup->mutex) );
+        if( s != 0 ) handle_error_en( s, "pthread_cond_wait" );
+
+        fprintf( stderr, "DEBUG: main thread received finish signal from thread %p\n", &(wup->thread) );
 
         print_color( wup->iter, max_iter );
 
-        s = pthread_mutex_unlock( &(wup->mutex) );
-        if( s != 0 ) handle_error_en( s, "pthread_mutex_unlock" );
-
 	--q_used;
       }
-
-      s = pthread_mutex_lock( &(wup->mutex) );
-      if( s != 0 ) handle_error_en( s, "pthread_mutex_lock" );
 
       wup->a = a;
       wup->b = b;
       wup->bailout  = bailout;
       wup->max_iter = max_iter;
 
-      //s = pthread_cond_signal( &(wup->start) );
-      //if( s != 0 ) handle_error_en( s, "pthread_cond_signal" );
+      fprintf( stderr, "DEBUG: main thread preparing to send start signal to thread %p\n", &(wup->thread) );
+
+      s = pthread_cond_signal( &(wup->start) );
+      if( s != 0 ) handle_error_en( s, "pthread_cond_signal" );
+
+      fprintf( stderr, "DEBUG: main thread sent start signal to thread %p\n", &(wup->thread) );
 
       s = pthread_mutex_unlock( &(wup->mutex) );
       if( s != 0 ) handle_error_en( s, "pthread_mutex_unlock" );
