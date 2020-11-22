@@ -5,6 +5,7 @@
 #include <string.h>
 #include <getopt.h>
 #include <pthread.h>
+#include <unistd.h>
 
 // I lifted this directly from the PTHREAD_CREATE(3) manpage
 #define handle_error_en(en, msg) \
@@ -169,10 +170,10 @@ static void *worker_wrapper( void *arg ) {
 
   work_unit_p wup = (work_unit_p)arg;
 
-  int s = pthread_mutex_lock( &(wup->mutex) );
-  if( s != 0 ) handle_error_en( s, "pthread_mutex_lock" );
-
   while( 1 ) {
+
+    int s = pthread_mutex_lock( &(wup->mutex) );
+    if( s != 0 ) handle_error_en( s, "pthread_mutex_lock" );
 
     fprintf( stderr, "DEBUG: thread %p waiting to receive start signal from main thread\n", &(wup->thread) );
 
@@ -189,6 +190,9 @@ static void *worker_wrapper( void *arg ) {
     if( s != 0 ) handle_error_en( s, "pthread_cond_signal" );
 
     fprintf( stderr, "DEBUG: thread %p sent finish signal to main thread\n", &(wup->thread) );
+
+    s = pthread_mutex_unlock( &(wup->mutex) );
+    if( s != 0 ) handle_error_en( s, "pthread_mutex_unlock" );
   }
 }
 
@@ -307,9 +311,6 @@ void backend_threads_simple( char *format, int width, int height, params_p pp, i
     int s;
     work_unit_p wup = &(work_queue[t]);
 
-    s = pthread_create( &(wup->thread), NULL, &worker_wrapper, (void *)wup );
-    if( s != 0 ) handle_error_en( s, "pthread_create" );
-
     s = pthread_mutex_init( &(wup->mutex), NULL );
     if( s != 0 ) handle_error_en( s, "pthread_mutex_init" );
 
@@ -318,6 +319,9 @@ void backend_threads_simple( char *format, int width, int height, params_p pp, i
 
     s = pthread_cond_init( &(wup->finish), NULL );
     if( s != 0 ) handle_error_en( s, "pthread_cond_init" );
+
+    s = pthread_create( &(wup->thread), NULL, &worker_wrapper, (void *)wup );
+    if( s != 0 ) handle_error_en( s, "pthread_create" );
   }
 
   work_unit_p wup = work_queue;
