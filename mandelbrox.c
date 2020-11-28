@@ -5,6 +5,13 @@
 #include <string.h>
 #include <getopt.h>
 #include <pthread.h>
+#include <unistd.h>
+
+#ifdef DEBUG
+# define DPRINTF(...) printf(__VA_ARGS__)
+#else
+# define DPRINTF(...)
+#endif
 
 // I lifted this directly from the PTHREAD_CREATE(3) manpage
 #define handle_error_en(en, msg) \
@@ -40,6 +47,10 @@ typedef struct work_unit {
   double bailout;
   pthread_t thread;
   pthread_mutex_t mutex;
+  pthread_cond_t start;
+  pthread_cond_t finish;
+  int busy;
+  struct work_unit *next;
 } work_unit_t, *work_unit_p;
 
 void preamble_common( char *format, int width, int height, params_p pp ) {
@@ -163,6 +174,46 @@ static void *worker_loop( void *arg ) {
   item->iter = iter;
 }
 
+static void *worker_wrapper( void *arg ) {
+
+  work_unit_p wup = (work_unit_p)arg;
+
+  while( 1 ) {
+
+    int s = pthread_mutex_lock( &wup->mutex );
+    if( s != 0 ) handle_error_en( s, "pthread_mutex_lock" );
+
+    DPRINTF( stderr, "DEBUG: thread %p waiting to receive start signal from main thread\n", &(wup->thread) );
+
+    while( wup->busy ) {
+      s = pthread_cond_wait( &wup->start, &wup->mutex );
+      if( s != 0 ) handle_error_en( s, "pthread_cond_wait" );
+    }
+
+    DPRINTF( stderr, "DEBUG: thread %p received start signal from main thread\n", &(wup->thread) );
+
+    wup->busy = 1;
+
+    s = pthread_mutex_unlock( &wup->mutex );
+    if( s != 0 ) handle_error_en( s, "pthread_mutex_unlock" );
+
+    worker_loop( arg );
+
+    s = pthread_mutex_lock( &wup->mutex );
+    if( s != 0 ) handle_error_en( s, "pthread_mutex_lock" );
+
+    DPRINTF( stderr, "DEBUG: thread %p preparing to send finish signal to main thread\n", &(wup->thread) );
+
+    s = pthread_cond_signal( &wup->finish );
+    if( s != 0 ) handle_error_en( s, "pthread_cond_signal" );
+
+    DPRINTF( stderr, "DEBUG: thread %p sent finish signal to main thread\n", &(wup->thread) );
+
+    s = pthread_mutex_unlock( &wup->mutex );
+    if( s != 0 ) handle_error_en( s, "pthread_mutex_unlock" );
+  }
+}
+
 void backend_plain( char *format, int width, int height, params_p pp, int threads ) {
 
   print_preamble( format, width, height, pp );
@@ -200,7 +251,7 @@ void backend_plain( char *format, int width, int height, params_p pp, int thread
 // efficient thing in terms of overhead (I constantly create new
 // threads and then join them without ever reusing them).
 
-void backend_threads_naive( char *format, int width, int height, params_p pp, int threads ) {
+void backend_threads_simple( char *format, int width, int height, params_p pp, int threads ) {
 
   int q_size = threads; // this is hard-coded for now, until I get around to parameterizing it
   int q_used = 0; // number of queue slots in use
@@ -209,7 +260,7 @@ void backend_threads_naive( char *format, int width, int height, params_p pp, in
   work_unit_p work_queue = ( work_unit_p )malloc( q_size * sizeof( work_unit_t ) );
 
   if( work_queue == NULL ) {
-    fprintf( stderr, "unable to allocate array of worker data - aborting\n" );
+    DPRINTF( stderr, "unable to allocate array of worker data - aborting\n" );
     exit( EXIT_FAILURE );
   }
 
@@ -256,6 +307,106 @@ void backend_threads_naive( char *format, int width, int height, params_p pp, in
       q_next %= q_size;
 
       wup = &(work_queue[ q_next ]);
+    }
+  }
+}
+
+void backend_threads_naive( char *format, int width, int height, params_p pp, int threads ) {
+
+  int q_size = threads; // this is hard-coded for now, until I get around to parameterizing it
+  int q_used = 0; // number of queue slots in use
+  int q_next = 0; // next queue slot to use
+
+  int s;
+
+  work_unit_p work_ring;
+  work_unit_p *wupp = &work_ring;
+
+  for( int t = 0; t < q_size; ++t ) {
+
+    work_unit_p new = (work_unit_p)malloc( sizeof( work_unit_t ) );
+
+    s = pthread_mutex_init( &(new->mutex), NULL );
+    if( s != 0 ) handle_error_en( s, "pthread_mutex_init" );
+
+    s = pthread_cond_init( &(new->start), NULL );
+    if( s != 0 ) handle_error_en( s, "pthread_cond_init" );
+
+    s = pthread_cond_init( &(new->finish), NULL );
+    if( s != 0 ) handle_error_en( s, "pthread_cond_init" );
+
+    s = pthread_create( &(new->thread), NULL, &worker_wrapper, (void *)new );
+    if( s != 0 ) handle_error_en( s, "pthread_create" );
+
+    *wupp = new;
+    wupp = &(new->next);
+  }
+
+  *wupp = work_ring;
+
+  work_unit_p wup = work_ring;
+
+  print_preamble( format, width, height, pp );
+
+  double x_delta = ( pp->x_max - pp->x_min ) / width;
+  double y_delta = ( pp->y_max - pp->y_min ) / height;
+  double bailout = pp->bailout;
+  int   max_iter = pp->max_iter;
+
+  double b = pp->y_max;
+
+  for( int j = 0; j < height; ++j, b -= y_delta ) {
+
+    double a = pp->x_min;
+
+    for( int i = 0; i < width; ++i, a += x_delta ) {
+
+      if( q_used == q_size ) {
+
+        int s = pthread_mutex_lock( &wup->mutex );
+        if( s != 0 ) handle_error_en( s, "pthread_mutex_lock" );
+
+        DPRINTF( stderr, "DEBUG: main thread preparing to wait for finish signal from thread %p\n", &(wup->thread) );
+
+	while( ! wup->busy ) {
+          s = pthread_cond_wait( &wup->finish, &wup->mutex );
+          if( s != 0 ) handle_error_en( s, "pthread_cond_wait" );
+	}
+
+        wup->busy = 0;
+
+        DPRINTF( stderr, "DEBUG: main thread received finish signal from thread %p\n", &(wup->thread) );
+
+        s = pthread_mutex_unlock( &wup->mutex );
+        if( s != 0 ) handle_error_en( s, "pthread_mutex_unlock" );
+
+        print_color( wup->iter, max_iter );
+
+	--q_used;
+      }
+
+      wup->a = a;
+      wup->b = b;
+      wup->bailout  = bailout;
+      wup->max_iter = max_iter;
+
+      int s = pthread_mutex_lock( &wup->mutex );
+      if( s != 0 ) handle_error_en( s, "pthread_mutex_lock" );
+
+      DPRINTF( stderr, "DEBUG: main thread preparing to send start signal to thread %p\n", &(wup->thread) );
+
+      s = pthread_cond_signal( &wup->start );
+      if( s != 0 ) handle_error_en( s, "pthread_cond_signal" );
+
+      DPRINTF( stderr, "DEBUG: main thread sent start signal to thread %p\n", &(wup->thread) );
+
+      s = pthread_mutex_unlock( &wup->mutex );
+      if( s != 0 ) handle_error_en( s, "pthread_mutex_unlock" );
+
+      ++q_used;
+      // TODO: check to ensure never greater than q_size
+
+      wup = wup->next;
     }
   }
 }
@@ -416,6 +567,12 @@ int main( int argc, char *argv[] ) {
     }
   }
   if( fn == 13 ) {
+    if( 0 == strncmp( "threads_simple", backend_name, fn ) ) {
+      backend = &backend_threads_simple;
+      ++arg_flag;
+    }
+  }
+  if( fn == 14 ) {
     if( 0 == strncmp( "threads_naive", backend_name, fn ) ) {
       backend = &backend_threads_naive;
       ++arg_flag;
