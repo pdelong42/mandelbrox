@@ -566,13 +566,13 @@ int main( int argc, char *argv[] ) {
       ++arg_flag;
     }
   }
-  if( fn == 13 ) {
+  if( fn == 14 ) {
     if( 0 == strncmp( "threads_simple", backend_name, fn ) ) {
       backend = &backend_threads_simple;
       ++arg_flag;
     }
   }
-  if( fn == 14 ) {
+  if( fn == 13 ) {
     if( 0 == strncmp( "threads_naive", backend_name, fn ) ) {
       backend = &backend_threads_naive;
       ++arg_flag;
