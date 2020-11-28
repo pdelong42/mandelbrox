@@ -346,17 +346,6 @@ void backend_threads_simple( char *format, int width, int height, params_p pp, i
 
   work_unit_p wup = work_ring;
 
-//  while( 1 ) {
-//
-//    work_unit_p next = wup->next;
-//
-//    printf( "DEBUG: wup = %p; wup->next = %p\n", wup, next );
-//
-//    wup = next;
-//
-//    sleep( 1 );
-//  }
-
   print_preamble( format, width, height, pp );
 
   double x_delta = ( pp->x_max - pp->x_min ) / width;
