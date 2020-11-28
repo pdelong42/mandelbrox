@@ -251,7 +251,7 @@ void backend_plain( char *format, int width, int height, params_p pp, int thread
 // efficient thing in terms of overhead (I constantly create new
 // threads and then join them without ever reusing them).
 
-void backend_threads_naive( char *format, int width, int height, params_p pp, int threads ) {
+void backend_threads_simple( char *format, int width, int height, params_p pp, int threads ) {
 
   int q_size = threads; // this is hard-coded for now, until I get around to parameterizing it
   int q_used = 0; // number of queue slots in use
@@ -311,7 +311,7 @@ void backend_threads_naive( char *format, int width, int height, params_p pp, in
   }
 }
 
-void backend_threads_simple( char *format, int width, int height, params_p pp, int threads ) {
+void backend_threads_naive( char *format, int width, int height, params_p pp, int threads ) {
 
   int q_size = threads; // this is hard-coded for now, until I get around to parameterizing it
   int q_used = 0; // number of queue slots in use
@@ -567,14 +567,14 @@ int main( int argc, char *argv[] ) {
     }
   }
   if( fn == 13 ) {
-    if( 0 == strncmp( "threads_naive", backend_name, fn ) ) {
-      backend = &backend_threads_naive;
+    if( 0 == strncmp( "threads_simple", backend_name, fn ) ) {
+      backend = &backend_threads_simple;
       ++arg_flag;
     }
   }
   if( fn == 14 ) {
-    if( 0 == strncmp( "threads_simple", backend_name, fn ) ) {
-      backend = &backend_threads_simple;
+    if( 0 == strncmp( "threads_naive", backend_name, fn ) ) {
+      backend = &backend_threads_naive;
       ++arg_flag;
     }
   }
