@@ -7,7 +7,7 @@
 set -xeuo pipefail
 
 CMD="/usr/bin/time ./mandelbrox"
-BASEARGS="-x -0.5 -X 0 -y -0.5 -Y 0 -t 4"
+BASEARGS="-x -0.5 -X 0 -y -0.5 -Y 0 -t 10"
 OPTARGS="-M 1000000 -w 100 -h 100"
 
 if test -n "$*" ; then
