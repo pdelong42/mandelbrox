@@ -1,13 +1,31 @@
-default: mandelbrox
+SRC=$(wildcard src/*.c)
+OBJ=$(patsubst src/%.c,obj/%.o,$(SRC))
+STATIC=$(patsubst src/%.c,bin/%-static,$(SRC))
+DYNAMIC=$(patsubst src/%.c,bin/%,$(SRC))
 
-mandelbrox: mandelbrox.c Makefile
-	cc -pthread -O3 -o mandelbrox mandelbrox.c -lm
+LDFLAGS += -lpthread -lc -lm
+#CFLAGS += -I ./include
+#CFLAGS += -DDEBUG
 
-static: mandelbrox.c Makefile
-	cc -pthread -O3 -static -o mandelbrox-static mandelbrox.c -lm
+.PHONY: clean static dynamic prep
 
-test: mandelbrox
-	@bash test.sh
+default: static dynamic
+
+static: $(STATIC)
+
+dynamic: $(DYNAMIC)
+
+$(OBJ): obj/%.o: src/%.c prep
+	cc -c -o $@ $< $(CFLAGS)
+
+$(STATIC): bin/%-static: obj/%.o prep
+	cc -o $@ $< $(LDFLAGS) -static
+
+$(DYNAMIC): bin/%: obj/%.o prep
+	cc -o $@ $< $(LDFLAGS)
 
 clean:
-	@rm -vf mandelbrox mandelbrox-static
+	@rm -rvf bin obj
+
+prep:
+	@mkdir -vp bin obj

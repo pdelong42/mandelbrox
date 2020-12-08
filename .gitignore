@@ -1,6 +1,8 @@
 mandelbrox
 mandelbrox-static
 tmp
+bin
+obj
 *.pbm
 *.pgm
 *.ppm
