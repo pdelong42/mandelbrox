@@ -3,6 +3,7 @@ mandelbrox-static
 tmp
 bin
 obj
+data
 *.pbm
 *.pgm
 *.ppm

@@ -2,6 +2,7 @@ SRC=$(wildcard src/*.c)
 OBJ=$(patsubst src/%.c,obj/%.o,$(SRC))
 STATIC=$(patsubst src/%.c,bin/%-static,$(SRC))
 DYNAMIC=$(patsubst src/%.c,bin/%,$(SRC))
+DIRS=bin obj
 
 LDFLAGS += -lpthread -lc -lm
 #CFLAGS += -I ./include
@@ -25,7 +26,7 @@ $(DYNAMIC): bin/%: obj/%.o prep
 	cc -o $@ $< $(LDFLAGS)
 
 clean:
-	@rm -rvf bin obj
+	@rm -rvf $(DIRS)
 
 prep:
-	@mkdir -vp bin obj
+	@mkdir -vp $(DIRS)
