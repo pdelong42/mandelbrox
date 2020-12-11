@@ -2,11 +2,22 @@
 
 # This test uses a patch of the complex plane that is contained
 # entirely within the Mandelbrot set, such that every point takes the
-# same amount of time.
+# same (maximum) amount of time.
 
-set -xeuo pipefail
+set -euo pipefail
 
-CMD="/usr/bin/time ./mandelbrox"
+SELF=$(realpath $0)
+SCRIPTS=$(dirname $SELF)
+BASE=$(dirname $SCRIPTS)
+
+function mb {
+    OUTPUT=${BASE}/data/${1}.ppm
+    shift
+    sh -x -c "/usr/bin/time ${BASE}/bin/mandelbrox $* > $OUTPUT"
+    echo ''
+    echo saved output to $OUTPUT
+}
+
 BASEARGS="-x -0.5 -X 0 -y -0.5 -Y 0 -t 10"
 OPTARGS="-M 1000000 -w 100 -h 100"
 
@@ -16,8 +27,6 @@ else
    ARGS="$BASEARGS $OPTARGS"
 fi
 
-rm -vf a.ppm b.ppm c.ppm
-
-$CMD -B plain          $ARGS > a.ppm
-$CMD -B threads_simple $ARGS > b.ppm
-$CMD -B threads_naive  $ARGS > c.ppm
+mb a -B plain          $ARGS
+mb b -B threads_simple $ARGS
+mb c -B threads_naive  $ARGS
