@@ -7,6 +7,7 @@ DIRS=bin obj
 LDFLAGS += -lpthread -lc -lm
 #CFLAGS += -I ./include
 #CFLAGS += -DDEBUG
+CFLAGS += -std=gnu99
 
 .PHONY: clean static dynamic prep
 
