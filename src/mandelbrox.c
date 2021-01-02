@@ -7,6 +7,8 @@
 #include <pthread.h>
 #include <unistd.h>
 
+#define PREC "%20lf"
+
 #ifdef DEBUG
 # define DPRINTF(...) printf(__VA_ARGS__)
 #else
@@ -475,19 +477,19 @@ int main( int argc, char *argv[] ) {
       break;
 
     case 'x':
-      sscanf( optarg, "%9lf", &p.x_min );
+      sscanf( optarg, PREC, &p.x_min );
       break;
 
     case 'X':
-      sscanf( optarg, "%9lf", &p.x_max );
+      sscanf( optarg, PREC, &p.x_max );
       break;
 
     case 'y':
-      sscanf( optarg, "%9lf", &p.y_min );
+      sscanf( optarg, PREC, &p.y_min );
       break;
 
     case 'Y':
-      sscanf( optarg, "%9lf", &p.y_max );
+      sscanf( optarg, PREC, &p.y_max );
       break;
 
     case 'm':

@@ -5,7 +5,7 @@ request_memory = 512 MB
 #request_disk = 0 GB 
 
 executable = ./bin/mandelbrox
-arguments = "-x $(xmin) -X $(xmax) -y $(ymin) -Y $(ymax) -M 1000 -w 1024 -h 1024"
+arguments = "-x $(xmin) -X $(xmax) -y $(ymin) -Y $(ymax) -M 10000 -w 1024 -h 1024"
 output = ./data/$(Cluster).$(Process).ppm
 error = ./data/$(Cluster).$(Process).err
 log = ./data/$(Cluster).$(Process).log
@@ -22,3 +22,4 @@ queue xmin,xmax,ymin,ymax from ./scripts/args.txt
 # The args file was generated with the following script:
 #
 # ./scripts/GenZoomParams.pl 100 -2 2 -2 2 0.425 0.45 0.355 0.380 > ./scripts/args.txt
+# ./scripts/GenZoomParams.pl 100 -2 2 -2 2 0.4440807 0.4440830 0.3643323 0.3643346 > ./scripts/args.txt

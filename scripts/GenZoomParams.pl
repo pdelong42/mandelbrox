@@ -57,7 +57,7 @@ my( $x_min, $x_max, $y_min, $y_max ) = ( $x2_min, $x2_max, $y2_min, $y2_max );
 #printf "# y_ratio = %lf; y_pop = %lf\n", $y_ratio, $y_pop;
 
 sub PrintCommandLine {
-    printf "%lf %lf %lf %lf\n", @_;
+    printf "%.20qf %.20qf %.20qf %.20qf\n", @_;
 }
 
 PrintCommandLine $x1_min, $x1_max, $y1_min, $y1_max;
