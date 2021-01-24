@@ -1,8 +1,8 @@
 universe = vanilla 
 
-request_cpus = 1 
-request_memory = 512 MB 
-#request_disk = 0 GB 
+request_cpus   = 1 
+request_memory = 20 MB 
+request_disk   = 20 MB 
 
 executable = ./bin/mandelbrox
 arguments = "-x $(xmin) -X $(xmax) -y $(ymin) -Y $(ymax) -M 10000 -w 1024 -h 1024"
@@ -17,9 +17,4 @@ Notification = never
 
 +ProjectName = "AMNH/IT/mandelbrox"
 
-queue xmin,xmax,ymin,ymax from ./scripts/args.txt
-
-# The args file was generated with the following script:
-#
-# ./scripts/GenZoomParams.pl 100 -2 2 -2 2 0.425 0.45 0.355 0.380 > ./scripts/args.txt
-# ./scripts/GenZoomParams.pl 100 -2 2 -2 2 0.4440807 0.4440830 0.3643323 0.3643346 > ./scripts/args.txt
+queue xmin,xmax,ymin,ymax from ./scripts/GenZoomParams.pl 200 -2 2 -2 2 0.4440807 0.4440830 0.3643323 0.3643346 |
