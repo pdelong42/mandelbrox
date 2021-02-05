@@ -40,4 +40,13 @@ function mb {
 #mb 19 -x 0.444080 -X 0.444084 -y 0.364331 -Y 0.364335 -M 1000 -w 1024 -h 1024
 #mb 20 -x 0.4440800 -X 0.4440837 -y 0.3643316 -Y 0.3643353 -M 1000 -w 1024 -h 1024
 #mb 21 -x 0.4440807 -X 0.4440830 -y 0.3643323 -Y 0.3643346 -M 1000 -w 1024 -h 1024
+
+# The next example (22) was the point at which I noticed that I needed to
+# switch from using "double" to using "long double".  It was more pronounced in
+# the zoom animation, as the lack of precision made it very jittery in the last
+# few frames.
+
 mb 22 -x 0.4440807 -X 0.4440830 -y 0.3643323 -Y 0.3643346 -M 10000 -w 1024 -h 1024
+
+# Presumably, I'll need to switch to using GMP sometime later down the
+# line.
