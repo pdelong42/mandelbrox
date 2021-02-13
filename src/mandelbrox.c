@@ -7,7 +7,9 @@
 #include <pthread.h>
 #include <unistd.h>
 
-#define PREC "%20lf"
+#define NONINT long double
+#define PREC_IN   "%20Lf"
+#define PREC_OUT "%.20Lf"
 
 #ifdef DEBUG
 # define DPRINTF(...) printf(__VA_ARGS__)
@@ -24,45 +26,45 @@ int c_max = (1<<8) - 1;
 int mu = 2;
 int nu = 50;
 
-double sixth = M_PI / 3.0;
+NONINT sixth = M_PI / 3.0;
 
 typedef struct color {
-  double red;
-  double green;
-  double blue;
+  NONINT red;
+  NONINT green;
+  NONINT blue;
 } color_t, *color_p;
 
 typedef struct params {
-  double x_min;
-  double x_max;
-  double y_min;
-  double y_max;
-  double bailout;
-  int max_iter;
+  NONINT x_min;
+  NONINT x_max;
+  NONINT y_min;
+  NONINT y_max;
+  NONINT bailout;
+  int    max_iter;
 } params_t, *params_p;
 
 typedef struct work_unit {
-  double a;
-  double b;
-  int iter;
-  int max_iter;
-  double bailout;
-  pthread_t thread;
+  NONINT a;
+  NONINT b;
+  NONINT bailout;
+  int    iter;
+  int    max_iter;
+  int    busy;
+  pthread_t       thread;
   pthread_mutex_t mutex;
-  pthread_cond_t start;
-  pthread_cond_t finish;
-  int busy;
+  pthread_cond_t  start;
+  pthread_cond_t  finish;
   struct work_unit *next;
 } work_unit_t, *work_unit_p;
 
 void preamble_common( char *format, int width, int height, params_p pp ) {
 
   printf( "%s\n", format );
-  printf( "# x_min = %f\n",    pp->x_min );
-  printf( "# x_max = %f\n",    pp->x_max );
-  printf( "# y_min = %f\n",    pp->y_min );
-  printf( "# y_max = %f\n",    pp->y_max );
-  printf( "# bailout = %f\n",  pp->bailout );
+  printf( "# x_min = " PREC_OUT "\n",    pp->x_min );
+  printf( "# x_max = " PREC_OUT "\n",    pp->x_max );
+  printf( "# y_min = " PREC_OUT "\n",    pp->y_min );
+  printf( "# y_max = " PREC_OUT "\n",    pp->y_max );
+  printf( "# bailout = " PREC_OUT "\n",  pp->bailout );
   printf( "# max_iter = %d\n", pp->max_iter );
 }
 
@@ -106,11 +108,11 @@ void color_picker( int iter, int max_iter, color_p c ) {
     return;
   }
 
-  double tmp;
-  double phi   = M_PI / mu;
-  double omega = M_PI * nu;
-  double ratio = (double)iter / (double)max_iter;
-  double theta = phi + omega * ratio;
+  NONINT tmp;
+  NONINT phi   = M_PI / mu;
+  NONINT omega = M_PI * nu;
+  NONINT ratio = (NONINT)iter / (NONINT)max_iter;
+  NONINT theta = phi + omega * ratio;
 
   tmp = cos( theta - sixth );
   tmp *= tmp;
@@ -152,21 +154,21 @@ static void *worker_loop( void *arg ) {
 
   work_unit_p item = arg;
 
-  double a = item->a;
-  double b = item->b;
-  double bailout  = item->bailout;
-  int max_iter = item->max_iter;
+  NONINT a = item->a;
+  NONINT b = item->b;
+  NONINT bailout  = item->bailout;
+  int    max_iter = item->max_iter;
 
-  int iter = 0;
-  double x = 0.0, y = 0.0;
+  int    iter = 0;
+  NONINT x = 0.0, y = 0.0;
 
   while( ++iter < max_iter ) {
 
-    double w  = x + y;
-    double ww = w * w;
-    double xx = x * x;
-    double yy = y * y;
-    double zz = xx + yy;
+    NONINT w  = x + y;
+    NONINT ww = w * w;
+    NONINT xx = x * x;
+    NONINT yy = y * y;
+    NONINT zz = xx + yy;
 
     if( zz > bailout ) break;
 
@@ -220,16 +222,16 @@ void backend_plain( char *format, int width, int height, params_p pp, int thread
 
   print_preamble( format, width, height, pp );
 
-  double x_delta = ( pp->x_max - pp->x_min ) / width;
-  double y_delta = ( pp->y_max - pp->y_min ) / height;
-  double bailout = pp->bailout;
+  NONINT x_delta = ( pp->x_max - pp->x_min ) / width;
+  NONINT y_delta = ( pp->y_max - pp->y_min ) / height;
+  NONINT bailout = pp->bailout;
   int   max_iter = pp->max_iter;
 
-  double b = pp->y_max;
+  NONINT b = pp->y_max;
 
   for( int j = 0; j < height; ++j, b -= y_delta ) {
 
-    double a = pp->x_min;
+    NONINT a = pp->x_min;
 
     for( int i = 0; i < width; ++i, a += x_delta ) {
 
@@ -270,16 +272,16 @@ void backend_threads_simple( char *format, int width, int height, params_p pp, i
 
   print_preamble( format, width, height, pp );
 
-  double x_delta = ( pp->x_max - pp->x_min ) / width;
-  double y_delta = ( pp->y_max - pp->y_min ) / height;
-  double bailout = pp->bailout;
+  NONINT x_delta = ( pp->x_max - pp->x_min ) / width;
+  NONINT y_delta = ( pp->y_max - pp->y_min ) / height;
+  NONINT bailout = pp->bailout;
   int   max_iter = pp->max_iter;
 
-  double b = pp->y_max;
+  NONINT b = pp->y_max;
 
   for( int j = 0; j < height; ++j, b -= y_delta ) {
 
-    double a = pp->x_min;
+    NONINT a = pp->x_min;
 
     for( int i = 0; i < width; ++i, a += x_delta ) {
 
@@ -350,16 +352,16 @@ void backend_threads_naive( char *format, int width, int height, params_p pp, in
 
   print_preamble( format, width, height, pp );
 
-  double x_delta = ( pp->x_max - pp->x_min ) / width;
-  double y_delta = ( pp->y_max - pp->y_min ) / height;
-  double bailout = pp->bailout;
+  NONINT x_delta = ( pp->x_max - pp->x_min ) / width;
+  NONINT y_delta = ( pp->y_max - pp->y_min ) / height;
+  NONINT bailout = pp->bailout;
   int   max_iter = pp->max_iter;
 
-  double b = pp->y_max;
+  NONINT b = pp->y_max;
 
   for( int j = 0; j < height; ++j, b -= y_delta ) {
 
-    double a = pp->x_min;
+    NONINT a = pp->x_min;
 
     for( int i = 0; i < width; ++i, a += x_delta ) {
 
@@ -473,23 +475,23 @@ int main( int argc, char *argv[] ) {
       break;
 
     case 'b':
-      sscanf( optarg, "%9lf", &p.bailout );
+      sscanf( optarg, PREC_IN, &p.bailout );
       break;
 
     case 'x':
-      sscanf( optarg, PREC, &p.x_min );
+      sscanf( optarg, PREC_IN, &p.x_min );
       break;
 
     case 'X':
-      sscanf( optarg, PREC, &p.x_max );
+      sscanf( optarg, PREC_IN, &p.x_max );
       break;
 
     case 'y':
-      sscanf( optarg, PREC, &p.y_min );
+      sscanf( optarg, PREC_IN, &p.y_min );
       break;
 
     case 'Y':
-      sscanf( optarg, PREC, &p.y_max );
+      sscanf( optarg, PREC_IN, &p.y_max );
       break;
 
     case 'm':
