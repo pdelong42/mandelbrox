@@ -1,0 +1,30 @@
+universe = vanilla 
+
+request_cpus = 1 
+request_disk   = 1024 MB 
+request_memory = 2048 MB 
+
+should_transfer_files = YES 
+when_to_transfer_output = ON_EXIT 
+
+Notification = never 
+
++ProjectName = "AMNH"
+
+initialdir = /home/pcdelong/Stuff/repos/github.com/pdelong42/mandelbrox/data
+
+executable = /home/pcdelong/Stuff/repos/github.com/pdelong42/mandelbrox/bin/ffmpeg
+
+transfer_input_files  = /home/pcdelong/Stuff/repos/github.com/pdelong42/mandelbrox/data
+transfer_output_files = data/$(Cluster).mov
+
+output = /home/pcdelong/Stuff/repos/github.com/pdelong42/mandelbrox/data/$(Cluster).$(Process).out
+error  = /home/pcdelong/Stuff/repos/github.com/pdelong42/mandelbrox/data/$(Cluster).$(Process).err
+log    = /home/pcdelong/Stuff/repos/github.com/pdelong42/mandelbrox/data/$(Cluster).$(Process).log
+
+arguments = "-hide_banner -i data/224061.%d.ppm data/$(Cluster).mov"
+
+queue
+
+# This is very much a work in progress.  Don't be surprised if it doesn't work
+# for you.  Especially considering all of the hard-coded paths.
